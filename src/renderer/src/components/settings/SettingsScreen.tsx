@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@heroui/react';
+import { FileSpreadsheet, ArrowRight } from 'lucide-react';
 import zaloLogo from '../../assets/zalo-logo.png';
 import whatsappLogo from '../../assets/whatsapp-logo.png';
 import marginceLogo from '../../assets/margince-logo.svg';
@@ -235,6 +236,21 @@ export function SettingsScreen() {
   };
 
   const isVi = language === 'vi';
+
+  // Dedicated Full-Page Google Sheets Studio View
+  if (showSheetsStudio || settingsTab === 'sheets') {
+    return (
+      <GoogleSheetsStudio
+        isVi={isVi}
+        onClose={() => {
+          setShowSheetsStudio(false);
+          if (settingsTab === 'sheets') {
+            setSettingsTab('delivery');
+          }
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex-1 h-full flex overflow-hidden bg-[#f7faf8] dark:bg-black text-neutral-900 dark:text-neutral-100 select-none animate-in fade-in duration-200">
@@ -659,21 +675,13 @@ export function SettingsScreen() {
                       <Button
                         size="sm"
                         className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-300/80 dark:border-emerald-800 transition cursor-pointer flex items-center gap-1.5 shrink-0"
-                        onPress={() => setShowSheetsStudio((prev) => !prev)}
+                        onPress={() => setShowSheetsStudio(true)}
                       >
-                        <span>
-                          {showSheetsStudio
-                            ? (isVi ? 'Thu gọn Sheet Studio ▲' : 'Collapse Sheet Studio ▲')
-                            : (isVi ? 'Mở Sheet Studio (Kéo thả cột & Preview) ▼' : 'Open Sheet Studio (Drag & Drop Table) ▼')}
-                        </span>
+                        <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span>{isVi ? 'Mở Sheet Studio' : 'Open Sheet Studio'}</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
                       </Button>
                     </div>
-
-                    {showSheetsStudio && (
-                      <div className="pt-4 border-t border-neutral-200/70 dark:border-neutral-800/80 animate-in fade-in duration-200">
-                        <GoogleSheetsStudio isVi={isVi} onClose={() => setShowSheetsStudio(false)} />
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -720,13 +728,6 @@ export function SettingsScreen() {
                 </div>
               </div>
             </div>
-          )}
-
-          {/* =============================================================== */}
-          {/* 3. GOOGLE SHEETS STUDIO (DRAG & DROP WORKBENCH)                 */}
-          {/* =============================================================== */}
-          {settingsTab === 'sheets' && (
-            <GoogleSheetsStudio isVi={isVi} />
           )}
 
           {/* =============================================================== */}
