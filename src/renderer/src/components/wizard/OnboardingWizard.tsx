@@ -473,7 +473,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   };
 
   // --- STEP 4: SYNC HISTORY RANGE ---
-  const [syncHistoryRange, setSyncHistoryRange] = useState<'3m' | '6m' | '12m' | 'all'>('6m');
+  const [syncHistoryRange, setSyncHistoryRange] = useState<'3m' | '6m' | '12m' | 'all'>('all');
 
   // --- STEP 5: DESTINATION SELECTION ---
   const [selectedDestinations, setSelectedDestinations] = useState<{
@@ -1186,110 +1186,46 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             )}
 
             {/* =============================================================== */}
-            {/* STEP 4: SYNC HISTORY RANGE (3, 6, 12 MONTHS, ALL)               */}
+            {/* STEP 4: SYNC HISTORY RANGE (ALL, 12, 6, 3 MONTHS)               */}
+            {/* 4 simple compact blocks stacked vertically                      */}
             {/* =============================================================== */}
             {step === 4 && (
-              <div className="space-y-3.5 animate-in fade-in duration-200">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  {[
-                    {
-                      id: '3m' as const,
-                      badge: '3 Months',
-                      title: 'Recent Pipeline',
-                      desc: 'Imports active deals and recent lead follow-ups.',
-                      time: '~25s sync',
-                      stats: '~1,250 msgs • 15 MB',
-                      tag: 'Fastest',
-                    },
-                    {
-                      id: '6m' as const,
-                      badge: '6 Months',
-                      title: 'Semi-Annual',
-                      desc: 'Balanced window for quotation and proposal histories.',
-                      time: '~1m 15s sync',
-                      stats: '~3,400 msgs • 45 MB',
-                      tag: 'Recommended',
-                    },
-                    {
-                      id: '12m' as const,
-                      badge: '12 Months',
-                      title: 'Full Annual Audit',
-                      desc: '1-year historical transcript for auditing and accounting.',
-                      time: '~2m 40s sync',
-                      stats: '~7,800 msgs • 110 MB',
-                      tag: 'Annual',
-                    },
-                    {
-                      id: 'all' as const,
-                      badge: 'All Time',
-                      title: 'Complete Archive',
-                      desc: 'Syncs all past messages, documents and media since inception.',
-                      time: '~4m+ sync',
-                      stats: 'All records • Full DB',
-                      tag: 'Lifetime Archive',
-                    },
-                  ].map((item) => {
-                    const isSelected = syncHistoryRange === item.id;
-                    return (
-                      <div
-                        key={item.id}
-                        onClick={() => setSyncHistoryRange(item.id)}
-                        className={`p-3.5 rounded-2xl border transition cursor-pointer flex flex-col justify-between select-none ${
-                          isSelected
-                            ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-neutral-900 dark:border-white shadow-md ring-2 ring-neutral-900 dark:ring-white ring-offset-2 ring-offset-white dark:ring-offset-[#111113]'
-                            : 'bg-neutral-50/70 dark:bg-[#161618] border-neutral-200/90 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600 text-neutral-800 dark:text-neutral-200'
-                        }`}
-                      >
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                                isSelected
-                                  ? 'bg-white/20 text-white dark:bg-black/10 dark:text-neutral-900 border-transparent'
-                                  : item.id === '6m'
-                                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                                  : 'bg-neutral-200/70 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 border-transparent'
-                              }`}
-                            >
-                              {item.badge}
-                            </span>
-                            <span
-                              className={`text-[10px] font-mono ${
-                                isSelected
-                                  ? 'text-white/80 dark:text-neutral-700'
-                                  : 'text-neutral-400 dark:text-neutral-500'
-                              }`}
-                            >
-                              {item.time}
-                            </span>
-                          </div>
-
-                          <h4 className="font-bold text-sm">{item.title}</h4>
-                          <p
-                            className={`text-xs mt-1 leading-relaxed ${
-                              isSelected
-                                ? 'text-white/85 dark:text-neutral-700'
-                                : 'text-neutral-500 dark:text-neutral-400'
-                            }`}
-                          >
-                            {item.desc}
-                          </p>
-                        </div>
-
+              <div className="space-y-2.5 animate-in fade-in duration-200 pt-1">
+                {[
+                  { id: 'all' as const, label: 'All' },
+                  { id: '12m' as const, label: '12 Months' },
+                  { id: '6m' as const, label: '6 Months' },
+                  { id: '3m' as const, label: '3 Months' },
+                ].map((item) => {
+                  const isSelected = syncHistoryRange === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setSyncHistoryRange(item.id)}
+                      className={`w-full px-4 py-3 rounded-xl border transition-all text-left flex items-center justify-between cursor-pointer select-none ${
+                        isSelected
+                          ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-neutral-900 dark:border-white shadow-sm ring-1 ring-black/10 dark:ring-white/20'
+                          : 'bg-neutral-50/70 dark:bg-neutral-900/40 border-neutral-200/90 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-700 text-neutral-800 dark:text-neutral-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
                         <div
-                          className={`mt-3 pt-2 border-t flex items-center justify-between text-[11px] font-mono ${
+                          className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
                             isSelected
-                              ? 'border-white/20 dark:border-black/10 text-white/90 dark:text-neutral-800'
-                              : 'border-neutral-200/70 dark:border-neutral-800 text-neutral-400'
+                              ? 'border-white dark:border-neutral-900 bg-transparent'
+                              : 'border-neutral-400 dark:border-neutral-600'
                           }`}
                         >
-                          <span>{item.stats}</span>
-                          <span className="font-sans font-bold text-[10px] uppercase tracking-wider">{item.tag}</span>
+                          {isSelected && (
+                            <div className="w-2 h-2 rounded-full bg-white dark:bg-neutral-900" />
+                          )}
                         </div>
+                        <span className="font-semibold text-sm tracking-wide">{item.label}</span>
                       </div>
-                    );
-                  })}
-                </div>
+                    </button>
+                  );
+                })}
               </div>
             )}
 
@@ -1852,92 +1788,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           )}
 
           {/* ================================================================= */}
-          {/* STEP 4: HISTORICAL SYNC SCOPE PREVIEW                             */}
+          {/* STEP 4 & 5 RIGHT PANE: PURE DYNAMIC BACKGROUND WAVES ONLY         */}
           {/* ================================================================= */}
-          {step === 4 && (
-            <div className="relative z-10 flex flex-col h-full justify-between gap-3 animate-in fade-in duration-300">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 dark:bg-black/40 backdrop-blur-md border border-white/15 text-white text-xs font-medium shadow-md w-fit">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Sync History Scope</span>
-              </div>
-
-              {/* Glassy Timeline and Metrics Card */}
-              <div className="flex-1 flex flex-col justify-center space-y-3 p-4 rounded-2xl bg-white/10 dark:bg-black/40 backdrop-blur-md border border-white/15 shadow-xl">
-                {/* Visual Timeline Bar */}
-                <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-mono text-neutral-300">
-                    <span>
-                      {syncHistoryRange === '3m' && 'Aug 2026 (Past 90 Days)'}
-                      {syncHistoryRange === '6m' && 'May 2026 (Past 180 Days)'}
-                      {syncHistoryRange === '12m' && 'Nov 2025 (Past 1 Year)'}
-                      {syncHistoryRange === 'all' && 'Account Inception (Full Lifetime)'}
-                    </span>
-                    <span className="text-emerald-400 font-bold">Today (Nov 2026)</span>
-                  </div>
-
-                  {/* Gradient Range Bar */}
-                  <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden relative">
-                    <div
-                      className={`h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500 ${
-                        syncHistoryRange === '3m'
-                          ? 'w-1/4 ml-auto'
-                          : syncHistoryRange === '6m'
-                          ? 'w-1/2 ml-auto'
-                          : syncHistoryRange === '12m'
-                          ? 'w-3/4 ml-auto'
-                          : 'w-full'
-                      }`}
-                    />
-                  </div>
-                </div>
-
-                {/* Scope Metrics */}
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-                    <span className="text-[10px] text-neutral-400 block">Monitored Threads</span>
-                    <span className="text-sm font-bold text-white mt-0.5 block">{selectedChatIds.length} Conversations</span>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-                    <span className="text-[10px] text-neutral-400 block">DropNoise Rules</span>
-                    <span className="text-sm font-bold text-emerald-400 mt-0.5 block">{activeDropCount} Active Filters</span>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-bold text-white block">Estimated Sync Volume</span>
-                    <span className="text-[10px] text-neutral-400 mt-0.5 block">
-                      {syncHistoryRange === '3m' && 'Fast import: ~1,250 verified messages'}
-                      {syncHistoryRange === '6m' && 'Balanced import: ~3,400 verified messages'}
-                      {syncHistoryRange === '12m' && 'Annual archive: ~7,800 verified messages'}
-                      {syncHistoryRange === 'all' && 'Complete archive: All past customer messages'}
-                    </span>
-                  </div>
-                  <span className="text-xs font-mono font-bold text-teal-300 bg-teal-500/10 px-2 py-1 rounded-lg border border-teal-500/20">
-                    {syncHistoryRange === '3m' && '15 MB'}
-                    {syncHistoryRange === '6m' && '45 MB'}
-                    {syncHistoryRange === '12m' && '110 MB'}
-                    {syncHistoryRange === 'all' && 'Full DB'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Bottom security assurance */}
-              <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-neutral-400 shrink-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  <span>Local SQLite encrypted database</span>
-                </div>
-                <span className="font-mono text-[10px] text-neutral-500">
-                  Ready to route
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* ================================================================= */}
-          {/* STEP 5 RIGHT PANE: PURE DYNAMIC BACKGROUND WAVES ONLY             */}
-          {/* ================================================================= */}
+          {step === 4 && null}
           {step === 5 && null}
         </div>
       </div>
