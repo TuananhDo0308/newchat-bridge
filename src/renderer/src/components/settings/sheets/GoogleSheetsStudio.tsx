@@ -18,6 +18,7 @@ import {
   ChevronDown,
   Table,
   Save,
+  Eye,
 } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore.js';
 import {
@@ -92,10 +93,23 @@ function LayoutThumb({ preset }: { preset: SheetLayoutPreset }) {
 
 interface GoogleSheetsStudioProps {
   isVi?: boolean;
+  isReadOnly?: boolean;
+  initialSheetName?: string;
+  initialSheetId?: string;
+  initialPreset?: SheetLayoutPreset;
+  initialColumns?: SheetColumn[];
   onClose?: () => void;
 }
 
-export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudioProps) {
+export function GoogleSheetsStudio({
+  isVi = false,
+  isReadOnly = false,
+  initialSheetName,
+  initialSheetId,
+  initialPreset,
+  initialColumns,
+  onClose,
+}: GoogleSheetsStudioProps) {
   const sheetsConfig = useAppStore((s) => s.sheetsConfig);
   const updateSheetsConfig = useAppStore((s) => s.updateSheetsConfig);
 
@@ -103,10 +117,10 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
   const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1);
 
   // Layout Configuration State
-  const [preset, setPreset] = useState<SheetLayoutPreset>(sheetsConfig.preset || 'single');
+  const [preset, setPreset] = useState<SheetLayoutPreset>(initialPreset || sheetsConfig.preset || 'single');
   const [includeContactsTab, setIncludeContactsTab] = useState(sheetsConfig.includeContactsTab ?? true);
   const [columns, setColumns] = useState<SheetColumn[]>(
-    sheetsConfig.columns || ['time', 'network', 'chat', 'sender', 'direction', 'text']
+    initialColumns || sheetsConfig.columns || ['time', 'network', 'chat', 'sender', 'direction', 'text']
   );
 
   // Active Tab in the live spreadsheet preview
@@ -118,8 +132,10 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Spreadsheet connection state
-  const [spreadsheetId, setSpreadsheetId] = useState(sheetsConfig.spreadsheetId);
-  const [selectedFileName, setSelectedFileName] = useState(sheetsConfig.selectedFileName || 'ChatBridge_Transcripts_2026');
+  const [spreadsheetId, setSpreadsheetId] = useState(initialSheetId || sheetsConfig.spreadsheetId);
+  const [selectedFileName, setSelectedFileName] = useState(
+    initialSheetName || sheetsConfig.selectedFileName || 'ChatBridge_Transcripts_2026'
+  );
 
   // Autocomplete state
   const [sheetSearchQuery, setSheetSearchQuery] = useState('');
@@ -332,14 +348,21 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            className="px-4 py-1.5 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 flex items-center gap-1.5 shadow-xs cursor-pointer"
-            onPress={handleSaveLayout}
-          >
-            <Check className="w-3.5 h-3.5" />
-            <span>{saveSuccess ? (isVi ? 'Đã lưu bố cục!' : 'Layout Saved!') : (isVi ? 'Lưu bố cục' : 'Save Layout')}</span>
-          </Button>
+          {isReadOnly ? (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-semibold">
+              <Eye className="w-3.5 h-3.5" />
+              <span>{isVi ? 'Chế độ chỉ xem' : 'Read-only mode'}</span>
+            </div>
+          ) : (
+            <Button
+              size="sm"
+              className="px-4 py-1.5 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 flex items-center gap-1.5 shadow-xs cursor-pointer"
+              onPress={handleSaveLayout}
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>{saveSuccess ? (isVi ? 'Đã lưu bố cục!' : 'Layout Saved!') : (isVi ? 'Lưu bố cục' : 'Save Layout')}</span>
+            </Button>
+          )}
         </div>
       </header>
 
@@ -426,93 +449,108 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
                   ) : null}
                 </div>
 
-                <Autocomplete
-                  className="w-full"
-                  onSelectionChange={(key) => {
-                    if (!key) return;
-                    const k = String(key);
-                    if (k === '__create_new__') {
-                      handleCreateNewSheet(sheetSearchQuery.trim() || 'New_ChatBridge_Spreadsheet');
-                    } else {
-                      const found = driveSheetsList.find((s) => s.id === k);
-                      if (found) {
-                        handleSelectSheet(found);
-                      }
-                    }
-                  }}
-                >
-                  <Autocomplete.Trigger className="w-full px-3.5 py-3 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:border-neutral-400 dark:hover:border-neutral-600 transition flex items-center justify-between text-xs font-semibold text-neutral-900 dark:text-white shadow-2xs cursor-pointer">
-                    <div className="flex items-center gap-2 truncate">
+                {isReadOnly ? (
+                  <div className="w-full px-4 py-3.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 flex items-center justify-between text-xs font-semibold text-neutral-900 dark:text-white shadow-2xs">
+                    <div className="flex items-center gap-2.5 truncate">
                       <FileSpreadsheet className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span className="truncate">{selectedFileName || 'ChatBridge_Transcripts_2026'}</span>
+                      <span className="truncate text-sm font-bold">{selectedFileName || 'ChatBridge_Transcripts_2026'}</span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        {isVi ? 'Đang liên kết' : 'Connected'}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-neutral-400">
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    </div>
-                  </Autocomplete.Trigger>
+                    <span className="text-[11px] font-mono text-neutral-400 shrink-0">
+                      ID: {spreadsheetId ? `${spreadsheetId.slice(0, 18)}...` : 'Linked'}
+                    </span>
+                  </div>
+                ) : (
+                  <Autocomplete
+                    className="w-full"
+                    onSelectionChange={(key) => {
+                      if (!key) return;
+                      const k = String(key);
+                      if (k === '__create_new__') {
+                        handleCreateNewSheet(sheetSearchQuery.trim() || 'New_ChatBridge_Spreadsheet');
+                      } else {
+                        const found = driveSheetsList.find((s) => s.id === k);
+                        if (found) {
+                          handleSelectSheet(found);
+                        }
+                      }
+                    }}
+                  >
+                    <Autocomplete.Trigger className="w-full px-3.5 py-3 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:border-neutral-400 dark:hover:border-neutral-600 transition flex items-center justify-between text-xs font-semibold text-neutral-900 dark:text-white shadow-2xs cursor-pointer">
+                      <div className="flex items-center gap-2 truncate">
+                        <FileSpreadsheet className="w-4 h-4 text-emerald-500 shrink-0" />
+                        <span className="truncate">{selectedFileName || 'ChatBridge_Transcripts_2026'}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-neutral-400">
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </div>
+                    </Autocomplete.Trigger>
 
-                  <Autocomplete.Popover className="w-full p-2 bg-white dark:bg-[#18181b] border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xl z-50">
-                    <Autocomplete.Filter>
-                      <SearchField className="mb-2">
-                        <SearchField.Group className="flex items-center px-2.5 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500/30 transition">
-                          <Search className="w-3.5 h-3.5 text-neutral-400 mr-2 shrink-0" />
-                          <SearchField.Input
-                            value={sheetSearchQuery}
-                            onChange={(e) => setSheetSearchQuery(e.target.value)}
-                            placeholder={isVi ? 'Tìm kiếm hoặc nhập tên mới...' : 'Search Google Drive sheets or type new name...'}
-                            className="w-full text-xs bg-transparent outline-none text-neutral-900 dark:text-white font-medium"
-                          />
-                          <SearchField.ClearButton />
-                        </SearchField.Group>
-                      </SearchField>
+                    <Autocomplete.Popover className="w-full p-2 bg-white dark:bg-[#18181b] border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xl z-50">
+                      <Autocomplete.Filter>
+                        <SearchField className="mb-2">
+                          <SearchField.Group className="flex items-center px-2.5 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500/30 transition">
+                            <Search className="w-3.5 h-3.5 text-neutral-400 mr-2 shrink-0" />
+                            <SearchField.Input
+                              value={sheetSearchQuery}
+                              onChange={(e) => setSheetSearchQuery(e.target.value)}
+                              placeholder={isVi ? 'Tìm kiếm hoặc nhập tên mới...' : 'Search Google Drive sheets or type new name...'}
+                              className="w-full text-xs bg-transparent outline-none text-neutral-900 dark:text-white font-medium"
+                            />
+                            <SearchField.ClearButton />
+                          </SearchField.Group>
+                        </SearchField>
 
-                      <ListBox className="space-y-1 max-h-60 overflow-y-auto">
-                        {/* Option: Create New Spreadsheet */}
-                        <ListBox.Item
-                          id="__create_new__"
-                          textValue={sheetSearchQuery.trim() || 'Tạo bảng tính mới'}
-                          className="p-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 cursor-pointer flex items-center gap-2.5 transition select-none"
-                        >
-                          <div className="w-6 h-6 rounded-lg bg-emerald-500 text-white flex items-center justify-center shrink-0">
-                            <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="text-xs font-bold truncate">
-                              {sheetSearchQuery.trim()
-                                ? (isVi ? `+ Tạo bảng tính mới: "${sheetSearchQuery.trim()}"` : `+ Create new spreadsheet: "${sheetSearchQuery.trim()}"`)
-                                : (isVi ? '+ Tạo bảng tính mới trên Google Drive' : '+ Create new spreadsheet on Drive')}
-                            </div>
-                            <div className="text-[10px] text-emerald-600 dark:text-emerald-400">
-                              {isVi ? 'Tự động tạo file và gán quyền ghi' : 'Auto-provisions file and syncs data'}
-                            </div>
-                          </div>
-                        </ListBox.Item>
-
-                        {/* Fetched Drive Spreadsheets */}
-                        {filteredSheets.map((file) => (
+                        <ListBox className="space-y-1 max-h-60 overflow-y-auto">
+                          {/* Option: Create New Spreadsheet */}
                           <ListBox.Item
-                            key={file.id}
-                            id={file.id}
-                            textValue={file.name}
-                            className={`p-2 rounded-xl text-left transition flex items-center justify-between cursor-pointer select-none text-xs ${
-                              selectedFileName === file.name
-                                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold shadow-2xs'
-                                : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
-                            }`}
+                            id="__create_new__"
+                            textValue={sheetSearchQuery.trim() || 'Tạo bảng tính mới'}
+                            className="p-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 cursor-pointer flex items-center gap-2.5 transition select-none"
                           >
-                            <div className="flex items-center gap-2 truncate">
-                              <FileSpreadsheet className="w-4 h-4 text-emerald-500 shrink-0" />
-                              <span className="text-xs truncate">{file.name}</span>
+                            <div className="w-6 h-6 rounded-lg bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                              <Plus className="w-3.5 h-3.5 stroke-[3]" />
                             </div>
-                            <span className={`text-[10px] font-mono shrink-0 ${selectedFileName === file.name ? 'text-neutral-300 dark:text-neutral-600' : 'text-neutral-400'}`}>
-                              {file.modified}
-                            </span>
+                            <div className="min-w-0">
+                              <div className="text-xs font-bold truncate">
+                                {sheetSearchQuery.trim()
+                                  ? (isVi ? `+ Tạo bảng tính mới: "${sheetSearchQuery.trim()}"` : `+ Create new spreadsheet: "${sheetSearchQuery.trim()}"`)
+                                  : (isVi ? '+ Tạo bảng tính mới trên Google Drive' : '+ Create new spreadsheet on Drive')}
+                              </div>
+                              <div className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                                {isVi ? 'Tự động tạo file và gán quyền ghi' : 'Auto-provisions file and syncs data'}
+                              </div>
+                            </div>
                           </ListBox.Item>
-                        ))}
-                      </ListBox>
-                    </Autocomplete.Filter>
-                  </Autocomplete.Popover>
-                </Autocomplete>
+
+                          {/* Fetched Drive Spreadsheets */}
+                          {filteredSheets.map((file) => (
+                            <ListBox.Item
+                              key={file.id}
+                              id={file.id}
+                              textValue={file.name}
+                              className={`p-2 rounded-xl text-left transition flex items-center justify-between cursor-pointer select-none text-xs ${
+                                selectedFileName === file.name
+                                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold shadow-2xs'
+                                  : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 truncate">
+                                <FileSpreadsheet className="w-4 h-4 text-emerald-500 shrink-0" />
+                                <span className="text-xs truncate">{file.name}</span>
+                              </div>
+                              <span className={`text-[10px] font-mono shrink-0 ${selectedFileName === file.name ? 'text-neutral-300 dark:text-neutral-600' : 'text-neutral-400'}`}>
+                                {file.modified}
+                              </span>
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Autocomplete.Filter>
+                    </Autocomplete.Popover>
+                  </Autocomplete>
+                )}
               </div>
 
               <div className="pt-2 flex items-center justify-between border-t border-neutral-100 dark:border-neutral-800/80">
@@ -565,10 +603,13 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
                     <div
                       key={card.id}
                       onClick={() => {
+                        if (isReadOnly) return;
                         setPreset(card.id);
                         updateSheetsConfig({ preset: card.id });
                       }}
-                      className={`p-4 rounded-2xl border transition-all select-none cursor-pointer flex flex-col justify-between gap-3.5 ${
+                      className={`p-4 rounded-2xl border transition-all select-none flex flex-col justify-between gap-3.5 ${
+                        isReadOnly ? 'cursor-default' : 'cursor-pointer'
+                      } ${
                         isSelected
                           ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-neutral-900 dark:border-white shadow-md ring-2 ring-emerald-500/20'
                           : 'bg-white dark:bg-[#161618] border-neutral-200/90 dark:border-neutral-800 hover:border-neutral-400 shadow-xs'
@@ -618,11 +659,14 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
               {/* Contacts Summary Tab Checkbox */}
               <div
                 onClick={() => {
+                  if (isReadOnly) return;
                   const next = !includeContactsTab;
                   setIncludeContactsTab(next);
                   updateSheetsConfig({ includeContactsTab: next });
                 }}
-                className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#161618] flex items-center justify-between cursor-pointer select-none shadow-xs"
+                className={`p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#161618] flex items-center justify-between select-none shadow-xs ${
+                  isReadOnly ? 'cursor-default opacity-80' : 'cursor-pointer'
+                }`}
               >
                 <div className="flex items-center gap-3">
                   <div
@@ -676,7 +720,11 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
             <div className="space-y-5 animate-in fade-in duration-200">
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-start">
                 {/* Field Palette (Cột có thể thêm) */}
-                <div className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#161618] space-y-3 lg:col-span-1 shadow-xs">
+                <div
+                  className={`p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#161618] space-y-3 lg:col-span-1 shadow-xs ${
+                    isReadOnly ? 'opacity-50 pointer-events-none' : ''
+                  }`}
+                >
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-bold text-neutral-900 dark:text-white uppercase tracking-wider">
                       {isVi ? 'Trường dữ liệu' : 'Field Palette'}
@@ -698,9 +746,9 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
                       unusedColumns.map((col) => (
                         <div
                           key={col.id}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, col.id)}
-                          onClick={() => addColumnToEnd(col.id)}
+                          draggable={!isReadOnly}
+                          onDragStart={(e) => !isReadOnly && handleDragStart(e, col.id)}
+                          onClick={() => !isReadOnly && addColumnToEnd(col.id)}
                           className="w-full p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-emerald-500 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 text-left transition text-xs font-medium flex items-center justify-between group cursor-grab active:cursor-grabbing select-none"
                           title={isVi ? 'Bấm hoặc kéo vào bảng để thêm cột' : 'Click or drag into table to add column'}
                         >
@@ -743,34 +791,42 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
                               return (
                                 <th
                                   key={col}
-                                  draggable
-                                  onDragStart={(e) => handleDragStart(e, col)}
-                                  onDragOver={(e) => handleDragOver(e, col)}
-                                  onDrop={(e) => handleDrop(e, col)}
+                                  draggable={!isReadOnly}
+                                  onDragStart={(e) => !isReadOnly && handleDragStart(e, col)}
+                                  onDragOver={(e) => !isReadOnly && handleDragOver(e, col)}
+                                  onDrop={(e) => !isReadOnly && handleDrop(e, col)}
                                   onDragEnd={handleDragEnd}
-                                  className={`p-2 border-r border-neutral-200 dark:border-neutral-800 text-left font-bold select-none cursor-grab active:cursor-grabbing transition group ${
+                                  className={`p-2 border-r border-neutral-200 dark:border-neutral-800 text-left font-bold select-none transition group ${
+                                    isReadOnly
+                                      ? 'cursor-default text-emerald-900 dark:text-emerald-300'
+                                      : 'cursor-grab active:cursor-grabbing hover:bg-emerald-100/60 dark:hover:bg-emerald-900/40 text-emerald-900 dark:text-emerald-300'
+                                  } ${
                                     isDragOver
                                       ? 'bg-emerald-500/25 text-emerald-800 dark:text-emerald-200 ring-2 ring-emerald-500/40 ring-inset'
-                                      : 'hover:bg-emerald-100/60 dark:hover:bg-emerald-900/40 text-emerald-900 dark:text-emerald-300'
+                                      : ''
                                   }`}
-                                  title={isVi ? 'Kéo để đổi thứ tự, bấm × để xóa' : 'Drag to reorder, click × to remove'}
+                                  title={isReadOnly ? '' : (isVi ? 'Kéo để đổi thứ tự, bấm × để xóa' : 'Drag to reorder, click × to remove')}
                                 >
                                   <div className="flex items-center justify-between gap-2 min-w-[130px]">
                                     <div className="flex items-center gap-1.5 truncate">
-                                      <GripVertical className="w-3.5 h-3.5 text-neutral-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 shrink-0" />
+                                      {!isReadOnly && (
+                                        <GripVertical className="w-3.5 h-3.5 text-neutral-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 shrink-0" />
+                                      )}
                                       <span className="truncate">{isVi ? colDef?.labelVi : colDef?.labelEn || col}</span>
                                     </div>
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeColumn(col);
-                                      }}
-                                      className="w-4 h-4 rounded-md hover:bg-rose-500/20 text-neutral-400 hover:text-rose-500 flex items-center justify-center transition cursor-pointer shrink-0"
-                                      title={isVi ? 'Xóa cột này khỏi bảng' : 'Remove column from table'}
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
+                                    {!isReadOnly && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          removeColumn(col);
+                                        }}
+                                        className="w-4 h-4 rounded-md hover:bg-rose-500/20 text-neutral-400 hover:text-rose-500 flex items-center justify-center transition cursor-pointer shrink-0"
+                                        title={isVi ? 'Xóa cột này khỏi bảng' : 'Remove column from table'}
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    )}
                                   </div>
                                 </th>
                               );
@@ -847,14 +903,24 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
                   <span>{isVi ? 'Quay lại' : 'Back'}</span>
                 </Button>
 
-                <Button
-                  size="sm"
-                  className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 cursor-pointer shadow-xs flex items-center gap-1.5"
-                  onPress={handleSaveLayout}
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  <span>{saveSuccess ? (isVi ? 'Đã lưu bố cục!' : 'Layout Saved!') : (isVi ? 'Hoàn tất & Lưu bố cục' : 'Finish & Save Layout')}</span>
-                </Button>
+                {isReadOnly ? (
+                  <Button
+                    size="sm"
+                    className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-neutral-900 dark:bg-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 cursor-pointer shadow-xs flex items-center gap-1.5"
+                    onPress={onClose}
+                  >
+                    <span>{isVi ? 'Đóng cấu hình' : 'Close Config'}</span>
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 cursor-pointer shadow-xs flex items-center gap-1.5"
+                    onPress={handleSaveLayout}
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{saveSuccess ? (isVi ? 'Đã lưu bố cục!' : 'Layout Saved!') : (isVi ? 'Hoàn tất & Lưu bố cục' : 'Finish & Save Layout')}</span>
+                  </Button>
+                )}
               </div>
             </div>
           )}
