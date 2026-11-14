@@ -68,9 +68,6 @@ const getInitialTheme = (): 'light' | 'dark' => {
   if (typeof window !== 'undefined') {
     const saved = localStorage.getItem('chatbridge_theme') as 'light' | 'dark';
     if (saved === 'light' || saved === 'dark') return saved;
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
   }
   return 'dark';
 };

@@ -289,12 +289,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const messages = useChatBridgeStore((s) => s.messages);
   const batchSyncChats = useChatBridgeStore((s) => s.batchSyncChats);
 
-  // 4 Dedicated Steps:
+  // 5 Dedicated Steps:
   // Step 1: Connect Account (Clean flip card -> QR -> Logged in profile)
-  // Step 2: DropNoise Filters (YouTube-style horizontal pill badges + Glassy floating chat dialogue on waves)
-  // Step 3: Sync Scope (Divided into Zalo & WhatsApp tabs + progress loads 1/2 for 2 accounts + live chat preview on right)
-  // Step 4: Choose Destination (Margince CRM / Google Sheets / Skip)
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  // Step 2: DropNoise Filters (Reactions, Message Edits, Stickers, Stories)
+  // Step 3: Select Conversations (Zalo & WhatsApp with 1:1 contact list)
+  // Step 4: Sync History Range (3, 6, 12 months, All Time)
+  // Step 5: Choose Destination (Margince CRM / Google Sheets / Skip)
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
 
   // --- STEP 1: MUTUALLY EXCLUSIVE FLIP CARD STATE ---
   const [activeFlippedChannel, setActiveFlippedChannel] = useState<'zalo' | 'whatsapp' | null>(null);
@@ -362,21 +363,17 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     setActiveFlippedChannel(null);
   };
 
-  // --- STEP 2: DROPNOISE FILTER BADGES (YOUTUBE-STYLE CHIPS) ---
+  // --- STEP 2: DROPNOISE FILTER BADGES (Reactions, Edits, Stickers, Stories) ---
   const [dropNoiseFilters, setDropNoiseFilters] = useState<{
-    heartbeat: boolean;
-    otp: boolean;
-    marketing: boolean;
-    largeMedia: boolean;
     reactions: boolean;
-    trackers: boolean;
+    edits: boolean;
+    stickers: boolean;
+    stories: boolean;
   }>({
-    heartbeat: true,
-    otp: true,
-    marketing: true,
-    largeMedia: true,
     reactions: true,
-    trackers: true,
+    edits: true,
+    stickers: true,
+    stories: true,
   });
 
   const toggleDropNoise = (key: keyof typeof dropNoiseFilters) => {
@@ -385,35 +382,29 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   const selectAllDropNoise = () => {
     setDropNoiseFilters({
-      heartbeat: true,
-      otp: true,
-      marketing: true,
-      largeMedia: true,
       reactions: true,
-      trackers: true,
+      edits: true,
+      stickers: true,
+      stories: true,
     });
   };
 
   const clearAllDropNoise = () => {
     setDropNoiseFilters({
-      heartbeat: false,
-      otp: false,
-      marketing: false,
-      largeMedia: false,
       reactions: false,
-      trackers: false,
+      edits: false,
+      stickers: false,
+      stories: false,
     });
   };
 
   const activeDropCount = Object.values(dropNoiseFilters).filter(Boolean).length;
 
   const dropNoiseBadgeList = [
-    { key: 'heartbeat' as const, label: 'Bot Pings' },
-    { key: 'otp' as const, label: 'OTP & 2FA' },
-    { key: 'marketing' as const, label: 'Marketing' },
     { key: 'reactions' as const, label: 'Reactions' },
-    { key: 'largeMedia' as const, label: 'Large Files (>25MB)' },
-    { key: 'trackers' as const, label: 'Link Trackers' },
+    { key: 'edits' as const, label: 'Message Edits' },
+    { key: 'stickers' as const, label: 'Stickers' },
+    { key: 'stories' as const, label: 'Stories & Status' },
   ];
 
   // --- STEP 3: CONVERSATION SYNC SCOPE ---
@@ -481,7 +472,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     }
   };
 
-  // --- STEP 4: DESTINATION SELECTION ---
+  // --- STEP 4: SYNC HISTORY RANGE ---
+  const [syncHistoryRange, setSyncHistoryRange] = useState<'3m' | '6m' | '12m' | 'all'>('6m');
+
+  // --- STEP 5: DESTINATION SELECTION ---
   const [selectedDestinations, setSelectedDestinations] = useState<{
     margince: boolean;
     sheets: boolean;
@@ -535,7 +529,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               </div>
             </div>
 
-            {/* Segmented Progress Bar: If 2 accounts, Step 3 loads half (1/2) on first account */}
+            {/* Segmented Progress Bar: 5 Full Steps */}
             <div className="flex items-center gap-2 mt-4 mb-3.5">
               {/* Segment 1 */}
               <div className="h-1.5 flex-1 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
@@ -572,11 +566,20 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 />
               </div>
 
-              {/* Segment 4 */}
+              {/* Segment 4: Sync History Range */}
               <div className="h-1.5 flex-1 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
                 <div
                   className={`h-full bg-neutral-900 dark:bg-white transition-all duration-500 ${
                     step >= 4 ? 'w-full' : 'w-0'
+                  }`}
+                />
+              </div>
+
+              {/* Segment 5: Forwarding Destination */}
+              <div className="h-1.5 flex-1 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+                <div
+                  className={`h-full bg-neutral-900 dark:bg-white transition-all duration-500 ${
+                    step >= 5 ? 'w-full' : 'w-0'
                   }`}
                 />
               </div>
@@ -593,7 +596,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       ? 'Select Zalo Conversations'
                       : 'Select WhatsApp Conversations'
                     : `Select ${step3Channel === 'zalo' ? 'Zalo' : 'WhatsApp'} Conversations`)}
-                {step === 4 && 'Choose Forwarding Destination'}
+                {step === 4 && 'Select Sync History Range'}
+                {step === 5 && 'Choose Forwarding Destination'}
               </h2>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 leading-relaxed">
                 {step === 1 &&
@@ -601,7 +605,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     ? 'Account connected. You can link the second channel or proceed to DropNoise.'
                     : 'Click Zalo or WhatsApp below to scan its QR code and link your account.')}
                 {step === 2 &&
-                  'Choose categories below to filter out noise from your active CRM stream.'}
+                  'Filter clutter, keep message edit audit trails, and strip non-sales noise.'}
                 {step === 3 &&
                   (hasBothAccounts
                     ? step3Channel === 'zalo'
@@ -609,6 +613,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       : 'Pick customer conversations you want to synchronize into CRM (Stage 2: WhatsApp).'
                     : `Pick ${step3Channel === 'zalo' ? 'Zalo' : 'WhatsApp'} customer conversations you want to synchronize into CRM.`)}
                 {step === 4 &&
+                  'Choose how far back to import customer conversation history into your CRM pipeline.'}
+                {step === 5 &&
                   'Route synchronized leads and conversations to Margince CRM or Google Sheets.'}
               </p>
             </div>
@@ -977,7 +983,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             {/* STEP 2: YOUTUBE-STYLE HORIZONTAL PILL BADGES                     */}
             {/* =============================================================== */}
             {step === 2 && (
-              <div className="space-y-4 animate-in fade-in duration-200">
+              <div className="space-y-3.5 animate-in fade-in duration-200">
                 {/* Control bar: Title, counter, select all / reset */}
                 <div className="flex items-center justify-between px-1">
                   <div className="flex items-center gap-2">
@@ -1031,6 +1037,34 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     );
                   })}
                 </div>
+
+                {/* Clear Explanations for the 4 core categories */}
+                <div className="space-y-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+                  <div className="p-2.5 rounded-xl bg-neutral-50/80 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/80 text-xs">
+                    <div className="font-semibold text-neutral-900 dark:text-white flex items-center gap-1.5">
+                      <span>👍 Reactions:</span>
+                      <span className="font-normal text-neutral-500 dark:text-neutral-400">Lọc bỏ cảm xúc (like, thả tim, haha) của người khác lên tin nhắn.</span>
+                    </div>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-neutral-50/80 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/80 text-xs">
+                    <div className="font-semibold text-neutral-900 dark:text-white flex items-center gap-1.5">
+                      <span>✏️ Message Edits:</span>
+                      <span className="font-normal text-neutral-500 dark:text-neutral-400">Giữ cả bản tin nhắn gốc & bản sửa để đối chiếu lịch sử CRM.</span>
+                    </div>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-neutral-50/80 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/80 text-xs">
+                    <div className="font-semibold text-neutral-900 dark:text-white flex items-center gap-1.5">
+                      <span>🐱 Stickers:</span>
+                      <span className="font-normal text-neutral-500 dark:text-neutral-400">Lọc bỏ nhãn dán hoạt hình không chứa văn bản bán hàng.</span>
+                    </div>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-neutral-50/80 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/80 text-xs">
+                    <div className="font-semibold text-neutral-900 dark:text-white flex items-center gap-1.5">
+                      <span>📷 Stories & Status:</span>
+                      <span className="font-normal text-neutral-500 dark:text-neutral-400">Lọc bỏ tin tức nhật ký Zalo/WhatsApp Story và phản hồi story.</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -1040,7 +1074,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             {/* =============================================================== */}
             {step === 3 && (
               <div className="space-y-3 animate-in fade-in duration-200">
-                {/* Channel sub-bar: Current Channel info & Select All toggle */}
+                {/* Channel sub-bar: Selected count & Select All toggle (Removed redundant text) */}
                 <div className="flex items-center justify-between px-1 pb-1">
                   <div className="flex items-center gap-2">
                     <img
@@ -1049,9 +1083,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       className="w-5 h-5 rounded-full object-cover shrink-0 shadow-xs"
                     />
                     <span className="text-xs font-bold text-neutral-900 dark:text-white">
-                      {isZaloChannel ? 'Zalo Conversations' : 'WhatsApp Conversations'}
+                      {displayedChats.filter((c) => selectedChatIds.includes(c.id)).length} of {displayedChats.length} Selected
                     </span>
-                    {hasBothAccounts ? (
+                    {hasBothAccounts && (
                       <span
                         className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
                           isZaloChannel
@@ -1059,11 +1093,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                             : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                         }`}
                       >
-                        {isZaloChannel ? 'Channel 1 of 2' : 'Channel 2 of 2'}
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-mono text-neutral-400 dark:text-neutral-500">
-                        ({displayedChats.filter((c) => selectedChatIds.includes(c.id)).length}/{displayedChats.length})
+                        {isZaloChannel ? 'Stage 1: Zalo' : 'Stage 2: WhatsApp'}
                       </span>
                     )}
                   </div>
@@ -1184,9 +1214,117 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             )}
 
             {/* =============================================================== */}
-            {/* STEP 4: SELECT DESTINATION (VERTICAL ROWS: MARGINCE & SHEETS)    */}
+            {/* STEP 4: SYNC HISTORY RANGE (3, 6, 12 MONTHS, ALL)               */}
             {/* =============================================================== */}
             {step === 4 && (
+              <div className="space-y-3.5 animate-in fade-in duration-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {[
+                    {
+                      id: '3m' as const,
+                      badge: '3 Months',
+                      title: 'Recent Pipeline',
+                      desc: 'Imports active deals and recent lead follow-ups.',
+                      time: '~25s sync',
+                      stats: '~1,250 msgs • 15 MB',
+                      tag: 'Fastest',
+                    },
+                    {
+                      id: '6m' as const,
+                      badge: '6 Months',
+                      title: 'Semi-Annual',
+                      desc: 'Balanced window for quotation and proposal histories.',
+                      time: '~1m 15s sync',
+                      stats: '~3,400 msgs • 45 MB',
+                      tag: 'Recommended',
+                    },
+                    {
+                      id: '12m' as const,
+                      badge: '12 Months',
+                      title: 'Full Annual Audit',
+                      desc: '1-year historical transcript for auditing and accounting.',
+                      time: '~2m 40s sync',
+                      stats: '~7,800 msgs • 110 MB',
+                      tag: 'Annual',
+                    },
+                    {
+                      id: 'all' as const,
+                      badge: 'All Time',
+                      title: 'Complete Archive',
+                      desc: 'Syncs all past messages, documents and media since inception.',
+                      time: '~4m+ sync',
+                      stats: 'All records • Full DB',
+                      tag: 'Lifetime Archive',
+                    },
+                  ].map((item) => {
+                    const isSelected = syncHistoryRange === item.id;
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => setSyncHistoryRange(item.id)}
+                        className={`p-3.5 rounded-2xl border transition cursor-pointer flex flex-col justify-between select-none ${
+                          isSelected
+                            ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-neutral-900 dark:border-white shadow-md ring-2 ring-neutral-900 dark:ring-white ring-offset-2 ring-offset-white dark:ring-offset-[#111113]'
+                            : 'bg-neutral-50/70 dark:bg-[#161618] border-neutral-200/90 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600 text-neutral-800 dark:text-neutral-200'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                isSelected
+                                  ? 'bg-white/20 text-white dark:bg-black/10 dark:text-neutral-900 border-transparent'
+                                  : item.id === '6m'
+                                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                                  : 'bg-neutral-200/70 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 border-transparent'
+                              }`}
+                            >
+                              {item.badge}
+                            </span>
+                            <span
+                              className={`text-[10px] font-mono ${
+                                isSelected
+                                  ? 'text-white/80 dark:text-neutral-700'
+                                  : 'text-neutral-400 dark:text-neutral-500'
+                              }`}
+                            >
+                              {item.time}
+                            </span>
+                          </div>
+
+                          <h4 className="font-bold text-sm">{item.title}</h4>
+                          <p
+                            className={`text-xs mt-1 leading-relaxed ${
+                              isSelected
+                                ? 'text-white/85 dark:text-neutral-700'
+                                : 'text-neutral-500 dark:text-neutral-400'
+                            }`}
+                          >
+                            {item.desc}
+                          </p>
+                        </div>
+
+                        <div
+                          className={`mt-3 pt-2 border-t flex items-center justify-between text-[11px] font-mono ${
+                            isSelected
+                              ? 'border-white/20 dark:border-black/10 text-white/90 dark:text-neutral-800'
+                              : 'border-neutral-200/70 dark:border-neutral-800 text-neutral-400'
+                          }`}
+                        >
+                          <span>{item.stats}</span>
+                          <span className="font-sans font-bold text-[10px] uppercase tracking-wider">{item.tag}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* =============================================================== */}
+            {/* STEP 5: SELECT DESTINATION (VERTICAL ROWS: MARGINCE & SHEETS)    */}
+            {/* =============================================================== */}
+            {step === 5 && (
               <div className="space-y-3.5 animate-in fade-in duration-200">
                 <div className="flex flex-col gap-3 pt-1">
                   {/* ROW 1: MARGINCE CRM */}
@@ -1303,8 +1441,17 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   onPress={() => {
                     if (step === 3 && hasBothAccounts && step3Channel === 'whatsapp') {
                       setStep3Channel('zalo');
+                    } else if (step === 4) {
+                      if (hasBothAccounts) {
+                        setStep(3);
+                        setStep3Channel('whatsapp');
+                      } else {
+                        setStep(3);
+                      }
+                    } else if (step === 5) {
+                      setStep(4);
                     } else {
-                      setStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3 | 4) : s));
+                      setStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3 | 4 | 5) : s));
                     }
                   }}
                 >
@@ -1359,13 +1506,24 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 flex items-center gap-1.5 shadow-xs transition cursor-pointer"
                     onPress={() => setStep(4)}
                   >
-                    <span>Next: Destination</span>
+                    <span>Next: Sync History</span>
                     <IconArrowRight className="w-3.5 h-3.5" />
                   </Button>
                 )
               )}
 
               {step === 4 && (
+                <Button
+                  size="sm"
+                  className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                  onPress={() => setStep(5)}
+                >
+                  <span>Next: Destination</span>
+                  <IconArrowRight className="w-3.5 h-3.5" />
+                </Button>
+              )}
+
+              {step === 5 && (
                 hasConnectedDestination ? (
                   <Button
                     size="sm"
@@ -1393,7 +1551,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         {/* RIGHT COLUMN: DYNAMIC GRADIENT WAVES WITH PURE GLASSY CHAT BUBBLES */}
         {/* EXACT EQUAL 50% WIDTH                                              */}
         {/* =================================================================== */}
-        <div className="hidden md:flex relative overflow-hidden bg-black rounded-2xl m-3 flex-col justify-between p-6 border border-neutral-800/80 shadow-inner">
+        <div className="hidden md:flex relative overflow-hidden bg-black rounded-2xl m-3 flex-col justify-between p-4 sm:p-5 pb-3.5 border border-neutral-800/80 shadow-inner">
           {/* WebGL2 Dynamic Shader Waves Canvas */}
           <AmbientWavesBackground
             paperColor={AMBIENT_PAPER_COLOR}
@@ -1406,8 +1564,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           {step === 1 && null}
 
           {/* ================================================================= */}
-          {/* STEP 2: GLASSY CHAT BUBBLES FLOATING DIRECTLY ON GRADIENT WAVES   */}
-          {/* NO ENCLOSING BLACK FRAME, USER ICONS, NO CLUSTERING, NO SCROLLBAR */}
+          {/* STEP 2: GLASSY CHAT BUBBLES DEMONSTRATING REACTIONS, EDITS, STICKERS, STORIES */}
           {/* ================================================================= */}
           {step === 2 && (
             <div className="relative z-10 flex flex-col h-full justify-between gap-3 animate-in fade-in duration-300">
@@ -1415,64 +1572,85 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               <div className="flex items-center justify-between shrink-0 pointer-events-none">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 dark:bg-black/40 backdrop-blur-md border border-white/15 text-white text-xs font-medium shadow-md">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Alexander (Lead Prospect)</span>
+                  <span>DropNoise Live Filter Preview</span>
                 </div>
                 <span className="text-[11px] font-mono text-neutral-200 bg-white/10 dark:bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/15">
-                  {activeDropCount} Filtered
+                  {activeDropCount} Filters Active
                 </span>
               </div>
 
-              {/* Glassy Floating Message Feed (No ugly scrollbar, safe padding, well-spaced) */}
-              <div className="flex-1 overflow-y-auto space-y-3.5 pr-1 min-h-0 flex flex-col justify-center py-2 scrollbar-none [&::-webkit-scrollbar]:hidden">
-                {/* 1. Customer Bubble (Left) - Frosted Translucent Glass */}
-                <div className="flex items-end gap-2.5 max-w-[85%]">
+              {/* Glassy Floating Message Feed */}
+              <div className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0 flex flex-col justify-center py-2 scrollbar-none [&::-webkit-scrollbar]:hidden">
+                {/* 1. Customer Bubble with REACTION */}
+                <div className="flex items-end gap-2.5 max-w-[90%]">
                   <div className="w-7 h-7 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shrink-0 shadow-sm">
                     <IconUser className="w-3.5 h-3.5" />
                   </div>
-                  <div className="rounded-2xl rounded-bl-xs px-3.5 py-2.5 bg-white/10 backdrop-blur-md border border-white/15 text-white shadow-lg">
+                  <div className="rounded-2xl rounded-bl-xs px-3.5 py-2.5 bg-white/10 backdrop-blur-md border border-white/15 text-white shadow-lg space-y-1">
                     <p className="text-xs leading-relaxed">
                       Hi Alexander, could you send me the latest quotation and features for the Gradion software?
                     </p>
-                    <span className="text-[9px] text-white/50 font-mono mt-1 block text-right">10:30 AM</span>
+                    <div className="flex items-center justify-between pt-0.5">
+                      <span className="text-[9px] text-white/50 font-mono">10:30 AM</span>
+                      <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full ${
+                        dropNoiseFilters.reactions
+                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                          : 'bg-white/15 text-neutral-200'
+                      }`}>
+                        <span>👍 1</span>
+                        {dropNoiseFilters.reactions && <span className="text-[9px] font-mono opacity-80">(Reaction filtered)</span>}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* 2. Sales Rep Bubble (Right) - Blue Translucent Glass */}
-                <div className="flex items-end justify-end gap-2.5 ml-auto max-w-[85%]">
-                  <div className="rounded-2xl rounded-br-xs px-3.5 py-2.5 bg-blue-600/35 backdrop-blur-md border border-blue-400/30 text-white shadow-lg">
+                {/* 2. Sales Rep Bubble with EDITED MESSAGE (Kept original + revised) */}
+                <div className="flex items-end justify-end gap-2.5 ml-auto max-w-[90%]">
+                  <div className="rounded-2xl rounded-br-xs px-3.5 py-2.5 bg-blue-600/35 backdrop-blur-md border border-blue-400/30 text-white shadow-lg space-y-1">
                     <p className="text-xs leading-relaxed">
-                      Hello! Absolutely, I will send the PDF breakdown and trial credentials right away.
+                      Hello! Absolutely, I will send the PDF proposal and enterprise license breakdown right away.
                     </p>
-                    <span className="text-[9px] text-blue-200/70 font-mono mt-1 block text-right">10:31 AM</span>
+                    {dropNoiseFilters.edits && (
+                      <div className="p-1.5 rounded-lg bg-blue-950/40 border border-blue-400/20 text-[10px] text-blue-200/90 font-mono space-y-0.5">
+                        <div className="line-through text-blue-300/60">Original [10:31 AM]: &quot;I will send the draft in 5m&quot;</div>
+                        <div className="text-emerald-300 font-semibold">✓ Audit: Kept both Original &amp; Revised version</div>
+                      </div>
+                    )}
+                    <span className="text-[9px] text-blue-200/70 font-mono mt-1 block text-right">10:32 AM (Edited)</span>
                   </div>
                   <div className="w-7 h-7 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 text-emerald-300 flex items-center justify-center shrink-0 shadow-sm">
                     <IconUser className="w-3.5 h-3.5" />
                   </div>
                 </div>
 
-                {/* 3. Customer Bubble 2 (Left) */}
-                <div className="flex items-end gap-2.5 max-w-[85%]">
+                {/* 3. STICKER Bubble (Filtered when stickers is active) */}
+                <div className="flex items-end gap-2.5 max-w-[90%]">
                   <div className="w-7 h-7 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shrink-0 shadow-sm">
                     <IconUser className="w-3.5 h-3.5" />
                   </div>
-                  <div className="rounded-2xl rounded-bl-xs px-3.5 py-2.5 bg-white/10 backdrop-blur-md border border-white/15 text-white shadow-lg">
-                    <p className="text-xs leading-relaxed">
-                      Thank you! Everything looks solid. Let&apos;s arrange a quick demo call tomorrow at 10 AM.
-                    </p>
-                    <span className="text-[9px] text-white/50 font-mono mt-1 block text-right">10:33 AM</span>
+                  <div className="rounded-2xl rounded-bl-xs px-3.5 py-2 bg-white/10 backdrop-blur-md border border-white/15 text-white shadow-lg flex items-center gap-2">
+                    <span className="text-base">🐱</span>
+                    <span className="text-xs font-medium">[Sticker: Thumbs Up Cat]</span>
+                    {dropNoiseFilters.stickers && (
+                      <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 ml-auto">
+                        Sticker filtered
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                {/* 4. Sales Rep Bubble 2 (Right) */}
-                <div className="flex items-end justify-end gap-2.5 ml-auto max-w-[85%] pb-2">
-                  <div className="rounded-2xl rounded-br-xs px-3.5 py-2.5 bg-blue-600/35 backdrop-blur-md border border-blue-400/30 text-white shadow-lg">
-                    <p className="text-xs leading-relaxed">
-                      Perfect! I have reserved 10:00 AM on Google Meet. See you tomorrow!
-                    </p>
-                    <span className="text-[9px] text-blue-200/70 font-mono mt-1 block text-right">10:35 AM</span>
-                  </div>
-                  <div className="w-7 h-7 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 text-emerald-300 flex items-center justify-center shrink-0 shadow-sm">
+                {/* 4. STORY NOTIFICATION (Filtered when stories is active) */}
+                <div className="flex items-end gap-2.5 max-w-[90%]">
+                  <div className="w-7 h-7 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shrink-0 shadow-sm">
                     <IconUser className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="rounded-2xl rounded-bl-xs px-3.5 py-2 bg-white/10 backdrop-blur-md border border-white/15 text-white shadow-lg flex items-center gap-2">
+                    <span className="text-xs">📷 Replied to your Story: &quot;Q4 Enterprise Launch 🚀&quot;</span>
+                    {dropNoiseFilters.stories && (
+                      <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 ml-auto">
+                        Story filtered
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1481,7 +1659,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
           {/* ================================================================= */}
           {/* STEP 3: LIVE CONVERSATION PREVIEW OF SELECTED PERSON               */}
-          {/* Real avatars for both 'me' and 'them', day grouping, long feed     */}
+          {/* Real avatars for both 'me' and 'them', day grouping, full height    */}
           {/* ================================================================= */}
           {step === 3 && activePreviewChat && (
             <div className="relative z-10 flex flex-col h-full justify-between gap-3 animate-in fade-in duration-300">
@@ -1523,7 +1701,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
                       {isOutbound ? (
                         /* Outbound: Bubble on the right with MY AVATAR on the far right */
-                        <div className="flex items-end justify-end gap-2.5 ml-auto max-w-[85%] shrink-0">
+                        <div className="flex items-end justify-end gap-2.5 ml-auto max-w-[92%] shrink-0">
                           <div
                             className={`rounded-2xl rounded-br-xs px-3.5 py-2.5 backdrop-blur-md border text-white shadow-lg ${
                               isZaloChannel
@@ -1546,7 +1724,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                         </div>
                       ) : (
                         /* Inbound: OTHER PERSON'S AVATAR on the left with Bubble */
-                        <div className="flex items-end gap-2.5 max-w-[85%] shrink-0">
+                        <div className="flex items-end gap-2.5 max-w-[92%] shrink-0">
                           {/* OTHER PERSON'S AVATAR */}
                           <div
                             className="w-7 h-7 rounded-full overflow-hidden ring-1 ring-white/20 shrink-0 shadow-sm bg-neutral-800"
@@ -1570,13 +1748,108 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   );
                 })}
               </div>
+
+              {/* Bottom glassy status line aligned with left bottom action bar */}
+              <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-neutral-400 shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Real-time transcript preview</span>
+                </div>
+                <span className="font-mono text-[10px] text-neutral-400">
+                  {displayedMessages.length} messages loaded
+                </span>
+              </div>
             </div>
           )}
 
           {/* ================================================================= */}
-          {/* STEP 4 RIGHT PANE: PURE DYNAMIC BACKGROUND WAVES ONLY             */}
+          {/* STEP 4: HISTORICAL SYNC SCOPE PREVIEW                             */}
           {/* ================================================================= */}
-          {step === 4 && null}
+          {step === 4 && (
+            <div className="relative z-10 flex flex-col h-full justify-between gap-3 animate-in fade-in duration-300">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 dark:bg-black/40 backdrop-blur-md border border-white/15 text-white text-xs font-medium shadow-md w-fit">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Sync History Scope</span>
+              </div>
+
+              {/* Glassy Timeline and Metrics Card */}
+              <div className="flex-1 flex flex-col justify-center space-y-3 p-4 rounded-2xl bg-white/10 dark:bg-black/40 backdrop-blur-md border border-white/15 shadow-xl">
+                {/* Visual Timeline Bar */}
+                <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-mono text-neutral-300">
+                    <span>
+                      {syncHistoryRange === '3m' && 'Aug 2026 (Past 90 Days)'}
+                      {syncHistoryRange === '6m' && 'May 2026 (Past 180 Days)'}
+                      {syncHistoryRange === '12m' && 'Nov 2025 (Past 1 Year)'}
+                      {syncHistoryRange === 'all' && 'Account Inception (Full Lifetime)'}
+                    </span>
+                    <span className="text-emerald-400 font-bold">Today (Nov 2026)</span>
+                  </div>
+
+                  {/* Gradient Range Bar */}
+                  <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden relative">
+                    <div
+                      className={`h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500 ${
+                        syncHistoryRange === '3m'
+                          ? 'w-1/4 ml-auto'
+                          : syncHistoryRange === '6m'
+                          ? 'w-1/2 ml-auto'
+                          : syncHistoryRange === '12m'
+                          ? 'w-3/4 ml-auto'
+                          : 'w-full'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                {/* Scope Metrics */}
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
+                    <span className="text-[10px] text-neutral-400 block">Monitored Threads</span>
+                    <span className="text-sm font-bold text-white mt-0.5 block">{selectedChatIds.length} Conversations</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
+                    <span className="text-[10px] text-neutral-400 block">DropNoise Rules</span>
+                    <span className="text-sm font-bold text-emerald-400 mt-0.5 block">{activeDropCount} Active Filters</span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-white block">Estimated Sync Volume</span>
+                    <span className="text-[10px] text-neutral-400 mt-0.5 block">
+                      {syncHistoryRange === '3m' && 'Fast import: ~1,250 verified messages'}
+                      {syncHistoryRange === '6m' && 'Balanced import: ~3,400 verified messages'}
+                      {syncHistoryRange === '12m' && 'Annual archive: ~7,800 verified messages'}
+                      {syncHistoryRange === 'all' && 'Complete archive: All past customer messages'}
+                    </span>
+                  </div>
+                  <span className="text-xs font-mono font-bold text-teal-300 bg-teal-500/10 px-2 py-1 rounded-lg border border-teal-500/20">
+                    {syncHistoryRange === '3m' && '15 MB'}
+                    {syncHistoryRange === '6m' && '45 MB'}
+                    {syncHistoryRange === '12m' && '110 MB'}
+                    {syncHistoryRange === 'all' && 'Full DB'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Bottom security assurance */}
+              <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-neutral-400 shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span>Local SQLite encrypted database</span>
+                </div>
+                <span className="font-mono text-[10px] text-neutral-500">
+                  Ready to route
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* ================================================================= */}
+          {/* STEP 5 RIGHT PANE: PURE DYNAMIC BACKGROUND WAVES ONLY             */}
+          {/* ================================================================= */}
+          {step === 5 && null}
         </div>
       </div>
     </div>
