@@ -181,7 +181,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   // --- STEP 5: DESTINATION SELECTION ---
   const [selectedDestinations, setSelectedDestinations] = useState<SelectedDestinations>({
     margince: false,
-    sheets: true,
+    sheets: false,
   });
 
   const hasConnectedDestination = Boolean(
@@ -353,7 +353,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           {step === 4 && null}
 
           {/* Step 5 Preview: Live Google Sheets Spreadsheet Preview */}
-          {step === 5 && (
+          {step === 5 && selectedDestinations.sheets && (
             <Step5SheetsPreview
               columns={sheetsConfig.columns}
               selectedFileName={sheetsConfig.selectedFileName}
