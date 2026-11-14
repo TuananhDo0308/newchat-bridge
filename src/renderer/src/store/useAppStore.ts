@@ -182,7 +182,8 @@ const normalizeTab = (tab: SettingsTab): SettingsTab => {
   if (tab === 'appearance') return 'preferences';
   if (tab === 'dropnoise') return 'noise';
   if (tab === 'destinations') return 'delivery';
-  if (tab === 'system') return 'data';
+  if (tab === 'setup' || tab === 'chats') return 'accounts';
+  if (tab === 'history' || tab === 'health' || tab === 'data' || tab === 'system' || tab === 'blocked') return 'preferences';
   return tab;
 };
 
@@ -194,7 +195,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   // On every page reload, start wizard fresh from step 1
   isWizardOpen: true,
   isSettingsOpen: false,
-  settingsTab: 'setup',
+  settingsTab: 'accounts',
 
   accentColor: (typeof window !== 'undefined' && (localStorage.getItem('chatbridge_accent') as AccentColor)) || 'orange',
   density: (typeof window !== 'undefined' && (localStorage.getItem('chatbridge_density') as DensityMode)) || 'comfortable',
@@ -212,14 +213,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   openWizard: () => set({ isWizardOpen: true }),
   closeWizard: () => set({ isWizardOpen: false }),
 
-  openSettings: (tab = 'setup') => set({ isSettingsOpen: true, settingsTab: normalizeTab(tab) }),
+  openSettings: (tab = 'accounts') => set({ isSettingsOpen: true, settingsTab: normalizeTab(tab) }),
   closeSettings: () => set({ isSettingsOpen: false }),
   toggleSettings: (tab) => {
     const { isSettingsOpen } = get();
     if (isSettingsOpen) {
       set({ isSettingsOpen: false });
     } else {
-      set({ isSettingsOpen: true, settingsTab: normalizeTab(tab || 'setup') });
+      set({ isSettingsOpen: true, settingsTab: normalizeTab(tab || 'accounts') });
     }
   },
   setSettingsTab: (settingsTab) => set({ settingsTab: normalizeTab(settingsTab) }),
