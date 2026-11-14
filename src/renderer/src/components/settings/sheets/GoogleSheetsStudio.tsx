@@ -1,5 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { Button } from '@heroui/react';
+import { useAppStore } from '../../../store/useAppStore.js';
 import {
   allSheetColumns,
   sampleMessages,
@@ -58,20 +59,18 @@ interface GoogleSheetsStudioProps {
 }
 
 export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudioProps) {
+  const sheetsConfig = useAppStore((s) => s.sheetsConfig);
+  const updateSheetsConfig = useAppStore((s) => s.updateSheetsConfig);
+
   // 4 Studio Steps
   const [activeStep, setActiveStep] = useState<1 | 2 | 3 | 4>(4);
 
   // Layout Configuration State
-  const [preset, setPreset] = useState<SheetLayoutPreset>('single');
-  const [includeContactsTab, setIncludeContactsTab] = useState(true);
-  const [columns, setColumns] = useState<SheetColumn[]>([
-    'time',
-    'network',
-    'chat',
-    'sender',
-    'direction',
-    'text',
-  ]);
+  const [preset, setPreset] = useState<SheetLayoutPreset>(sheetsConfig.preset || 'single');
+  const [includeContactsTab, setIncludeContactsTab] = useState(sheetsConfig.includeContactsTab ?? true);
+  const [columns, setColumns] = useState<SheetColumn[]>(
+    sheetsConfig.columns || ['time', 'network', 'chat', 'sender', 'direction', 'text']
+  );
 
   // Active Tab in the live spreadsheet preview
   const [activePreviewTab, setActivePreviewTab] = useState<string>('messages');
@@ -82,9 +81,11 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Spreadsheet connection state
-  const [spreadsheetId, setSpreadsheetId] = useState('1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms');
-  const [sheetName, setSheetName] = useState('ChatBridge_Transcripts');
-  const [googleAccount] = useState('tuananh@gradion.ai');
+  const [spreadsheetId, setSpreadsheetId] = useState(sheetsConfig.spreadsheetId);
+  const [sheetName, setSheetName] = useState(sheetsConfig.sheetName);
+  const [googleAccount] = useState(sheetsConfig.googleAccount || 'tuananh@gradion.ai');
+  const [selectedFileName, setSelectedFileName] = useState(sheetsConfig.selectedFileName || 'ChatBridge_Transcripts_2026');
+  const [createMode, setCreateMode] = useState<'new' | 'existing'>(sheetsConfig.createMode || 'new');
 
   // Unused columns in palette
   const unusedColumns = useMemo(
@@ -153,6 +154,16 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
   };
 
   const handleSaveLayout = () => {
+    updateSheetsConfig({
+      preset,
+      includeContactsTab,
+      columns,
+      spreadsheetId,
+      sheetName,
+      googleAccount,
+      selectedFileName,
+      createMode,
+    });
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2200);
   };
@@ -318,34 +329,132 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
       )}
 
       {/* =================================================================== */}
-      {/* STEP 2: DESTINATION SPREADSHEET                                     */}
+      {/* STEP 2: DESTINATION SPREADSHEET (CHỌN FILE LƯU TRÊN DRIVE)          */}
       {/* =================================================================== */}
       {activeStep === 2 && (
         <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-[#161618] space-y-4 animate-in fade-in duration-200">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-neutral-900 dark:text-white">
-              Google Spreadsheet ID / Share URL
-            </label>
-            <input
-              type="text"
-              value={spreadsheetId}
-              onChange={(e) => setSpreadsheetId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-mono"
-              placeholder="1BxiMVs0XRA5n..."
-            />
+          <div>
+            <h4 className="text-sm font-bold text-neutral-900 dark:text-white">
+              {isVi ? 'Chọn file lưu trữ trên Google Drive' : 'Select Destination File on Google Drive'}
+            </h4>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+              {isVi
+                ? 'Tạo mới hoặc chọn bảng tính có sẵn từ tài khoản Google Drive của bạn để lưu hội thoại.'
+                : 'Create a new spreadsheet or pick an existing sheet from your Google Drive storage.'}
+            </p>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-neutral-900 dark:text-white">
-              Base Worksheet Tab Name
-            </label>
-            <input
-              type="text"
-              value={sheetName}
-              onChange={(e) => setSheetName(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              placeholder="ChatBridge_Transcripts"
-            />
+          {/* Mode Selector */}
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onClick={() => setCreateMode('new')}
+              className={`p-3 rounded-xl border text-left transition select-none cursor-pointer ${
+                createMode === 'new'
+                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-neutral-900 dark:border-white shadow-xs font-bold'
+                  : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-neutral-400'
+              }`}
+            >
+              <div className="text-xs">{isVi ? '📄 Tạo bảng tính mới' : '📄 Create New Spreadsheet'}</div>
+              <div className={`text-[10px] font-mono mt-0.5 ${createMode === 'new' ? 'text-neutral-300 dark:text-neutral-600' : 'text-neutral-400'}`}>
+                {isVi ? 'Tự tạo file mới trên Drive' : 'Auto-provision new sheet'}
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCreateMode('existing')}
+              className={`p-3 rounded-xl border text-left transition select-none cursor-pointer ${
+                createMode === 'existing'
+                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-neutral-900 dark:border-white shadow-xs font-bold'
+                  : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-neutral-400'
+              }`}
+            >
+              <div className="text-xs">{isVi ? '📁 Chọn file từ Google Drive' : '📁 Pick from Google Drive'}</div>
+              <div className={`text-[10px] font-mono mt-0.5 ${createMode === 'existing' ? 'text-neutral-300 dark:text-neutral-600' : 'text-neutral-400'}`}>
+                {isVi ? 'Ghi nối vào sheet có sẵn' : 'Append to existing sheet'}
+              </div>
+            </button>
+          </div>
+
+          {createMode === 'new' ? (
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-neutral-900 dark:text-white">
+                {isVi ? 'Tên file bảng tính mới' : 'New Spreadsheet File Name'}
+              </label>
+              <input
+                type="text"
+                value={selectedFileName}
+                onChange={(e) => setSelectedFileName(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                placeholder="ChatBridge_Transcripts_2026"
+              />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-neutral-900 dark:text-white">
+                {isVi ? 'File tìm thấy trong Google Drive của bạn' : 'Files Found in Your Google Drive'}
+              </label>
+              <div className="space-y-1.5">
+                {[
+                  { name: 'ChatBridge_Transcripts_2026', id: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms', modified: 'Vừa xong' },
+                  { name: 'Q4_Enterprise_Sales_Pipeline', id: '1A98BCx2309kLMNz8943184', modified: 'Hôm qua' },
+                  { name: 'APAC_Client_Communications_Log', id: '1C7719830219842189014', modified: '3 ngày trước' },
+                ].map((file) => {
+                  const isChosen = selectedFileName === file.name;
+                  return (
+                    <div
+                      key={file.id}
+                      onClick={() => {
+                        setSelectedFileName(file.name);
+                        setSpreadsheetId(file.id);
+                      }}
+                      className={`p-2.5 rounded-xl border text-xs transition cursor-pointer select-none flex items-center justify-between ${
+                        isChosen
+                          ? 'bg-emerald-500/10 border-emerald-500 text-emerald-700 dark:text-emerald-300 font-semibold shadow-2xs'
+                          : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-neutral-400'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 truncate">
+                        <span className="text-emerald-500 font-bold">📊</span>
+                        <span className="truncate">{file.name}</span>
+                      </div>
+                      <span className="text-[10px] text-neutral-400 font-mono shrink-0">
+                        {file.modified}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-neutral-900 dark:text-white">
+                {isVi ? 'Mã Spreadsheet ID' : 'Google Spreadsheet ID'}
+              </label>
+              <input
+                type="text"
+                value={spreadsheetId}
+                onChange={(e) => setSpreadsheetId(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-mono"
+                placeholder="1BxiMVs0XRA5n..."
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-neutral-900 dark:text-white">
+                {isVi ? 'Tên Tab mặc định (Worksheet Tab)' : 'Base Worksheet Tab Name'}
+              </label>
+              <input
+                type="text"
+                value={sheetName}
+                onChange={(e) => setSheetName(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                placeholder="ChatBridge_Transcripts"
+              />
+            </div>
           </div>
 
           <div className="pt-2 flex items-center justify-between">

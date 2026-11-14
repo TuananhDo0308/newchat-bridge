@@ -9,6 +9,7 @@ import { Step2DropNoise, Step2DropNoisePreview } from './Step2DropNoise.js';
 import { Step3SelectConversations, Step3ConversationPreview } from './Step3SelectConversations.js';
 import { Step4SyncHistory } from './Step4SyncHistory.js';
 import { Step5Destinations } from './Step5Destinations.js';
+import { Step5SheetsPreview } from './Step5SheetsPreview.js';
 import type {
   WizardStep,
   DropNoiseFilters,
@@ -25,6 +26,7 @@ const AMBIENT_WAVE_COLORS: [string, string, string] = ['#ea580c', '#2563eb', '#1
 
 export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const theme = useAppStore((s) => s.theme);
+  const sheetsConfig = useAppStore((s) => s.sheetsConfig);
   const chats = useChatBridgeStore((s) => s.chats);
   const messages = useChatBridgeStore((s) => s.messages);
   const batchSyncChats = useChatBridgeStore((s) => s.batchSyncChats);
@@ -179,7 +181,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   // --- STEP 5: DESTINATION SELECTION ---
   const [selectedDestinations, setSelectedDestinations] = useState<SelectedDestinations>({
     margince: false,
-    sheets: false,
+    sheets: true,
   });
 
   const hasConnectedDestination = Boolean(
@@ -346,10 +348,21 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             />
           )}
 
-          {/* Steps 1, 4, 5: Pure Ambient Waves */}
+          {/* Steps 1, 4: Pure Ambient Waves */}
           {step === 1 && null}
           {step === 4 && null}
-          {step === 5 && null}
+
+          {/* Step 5 Preview: Live Google Sheets Spreadsheet Preview */}
+          {step === 5 && (
+            <Step5SheetsPreview
+              columns={sheetsConfig.columns}
+              selectedFileName={sheetsConfig.selectedFileName}
+              preset={sheetsConfig.preset}
+              includeContactsTab={sheetsConfig.includeContactsTab}
+              googleAccount={sheetsConfig.googleAccount}
+              isMarginceActive={selectedDestinations.margince}
+            />
+          )}
         </div>
       </div>
     </div>

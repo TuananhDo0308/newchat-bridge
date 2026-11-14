@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { SheetColumn, SheetLayoutPreset } from '../components/settings/sheets/sheetsData.js';
 
 export type SettingsTab =
   | 'setup'
@@ -48,6 +49,13 @@ export interface SheetsConfig {
   spreadsheetId: string;
   sheetName: string;
   autoSync: boolean;
+  googleAccount: string;
+  oauthConnected: boolean;
+  selectedFileName: string;
+  createMode: 'new' | 'existing';
+  columns: SheetColumn[];
+  preset: SheetLayoutPreset;
+  includeContactsTab: boolean;
 }
 
 interface AppState {
@@ -158,6 +166,13 @@ const getSavedSheets = (): SheetsConfig => {
     spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
     sheetName: 'ChatBridge_Transcripts',
     autoSync: true,
+    googleAccount: 'tuananh@gradion.ai',
+    oauthConnected: true,
+    selectedFileName: 'ChatBridge_Transcripts_2026',
+    createMode: 'new',
+    columns: ['time', 'network', 'chat', 'sender', 'direction', 'text'],
+    preset: 'single',
+    includeContactsTab: true,
   };
   if (typeof window !== 'undefined') {
     try {

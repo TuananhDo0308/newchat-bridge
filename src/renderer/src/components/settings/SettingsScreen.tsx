@@ -616,17 +616,40 @@ export function SettingsScreen() {
 
                 {sheetsConfig.enabled && (
                   <div className="space-y-3.5 pt-3 border-t border-neutral-200/60 dark:border-neutral-800/80">
+                    {/* Google OAuth Account Card */}
+                    <div className="p-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 ring-1 ring-neutral-200 dark:ring-neutral-700 flex items-center justify-center font-bold text-xs text-neutral-900 dark:text-white">
+                          G
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-neutral-900 dark:text-white">
+                            Google Drive & Sheets Access
+                          </div>
+                          <div className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
+                            {sheetsConfig.googleAccount || 'tuananh@gradion.ai'} (OAuth 2.0 Active)
+                          </div>
+                        </div>
+                      </div>
+
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>Connected</span>
+                      </span>
+                    </div>
+
+                    {/* File Selection Mode */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <label className="text-[11px] font-semibold text-neutral-600 dark:text-neutral-300">
-                          Spreadsheet ID / Share URL
+                          {isVi ? 'Tên file bảng tính lưu trữ' : 'Spreadsheet File Name'}
                         </label>
                         <input
                           type="text"
-                          value={sheetsConfig.spreadsheetId}
-                          onChange={(e) => updateSheetsConfig({ spreadsheetId: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 focus:outline-none focus:ring-1 focus:ring-neutral-800 dark:focus:ring-white font-mono"
-                          placeholder="1BxiMVs0XRA5n..."
+                          value={sheetsConfig.selectedFileName || 'ChatBridge_Transcripts_2026'}
+                          onChange={(e) => updateSheetsConfig({ selectedFileName: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 focus:outline-none focus:ring-1 focus:ring-neutral-800 dark:focus:ring-white font-medium"
+                          placeholder="ChatBridge_Transcripts_2026"
                         />
                       </div>
 
@@ -642,6 +665,19 @@ export function SettingsScreen() {
                           placeholder="ChatBridge_Transcripts"
                         />
                       </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-neutral-600 dark:text-neutral-300">
+                        Spreadsheet ID / Share URL
+                      </label>
+                      <input
+                        type="text"
+                        value={sheetsConfig.spreadsheetId}
+                        onChange={(e) => updateSheetsConfig({ spreadsheetId: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 focus:outline-none focus:ring-1 focus:ring-neutral-800 dark:focus:ring-white font-mono"
+                        placeholder="1BxiMVs0XRA5n..."
+                      />
                     </div>
 
                     <div className="flex items-center justify-between pt-1">
@@ -678,7 +714,7 @@ export function SettingsScreen() {
                         className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-300/80 dark:border-emerald-800 transition cursor-pointer flex items-center gap-1.5 shrink-0"
                         onPress={() => setSettingsTab('sheets')}
                       >
-                        <span>{isVi ? 'Studio kéo thả cột (Pro UI)' : 'Drag & Drop Studio (Pro UI)'}</span>
+                        <span>{isVi ? 'Mở Sheet Studio (Kéo thả cột & Preview)' : 'Open Sheet Studio (Drag & Drop Table)'}</span>
                         <span>→</span>
                       </Button>
                     </div>
