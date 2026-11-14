@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Button } from '@heroui/react';
 import { useAppStore } from '../../../store/useAppStore.js';
 import {
@@ -44,12 +44,82 @@ function IconGrip(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+function IconSearch(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
+
 function IconPlus(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
+  );
+}
+
+/**
+ * Authentic miniature spreadsheet illustration from chat_bridge.
+ * Renders spreadsheet grid lines and the bottom tab pills for each strategy.
+ */
+function LayoutThumb({ preset }: { preset: SheetLayoutPreset }) {
+  const tabs =
+    preset === 'single'
+      ? ['Messages']
+      : preset === 'daily'
+      ? ['2026-10-30', '2026-11-05', '2026-11-06']
+      : preset === 'monthly'
+      ? ['2026-10', '2026-11']
+      : preset === 'network'
+      ? ['Zalo', 'WhatsApp']
+      : preset === 'contact'
+      ? ['Lan', 'Marcus', 'Tuấn']
+      : ['Zalo - 2026-11'];
+
+  return (
+    <div className="w-full rounded-xl border border-neutral-200 dark:border-neutral-700/80 bg-white dark:bg-[#111113] overflow-hidden shadow-2xs select-none pointer-events-none">
+      {/* Top Spreadsheet Grid Lines (authentic chat_bridge thumbGrid) */}
+      <div className="h-12 p-2 bg-neutral-50/70 dark:bg-neutral-900/40 flex flex-col justify-between">
+        <div className="flex gap-1.5 opacity-60">
+          <div className="h-1.5 w-7 rounded-xs bg-neutral-300 dark:bg-neutral-700" />
+          <div className="h-1.5 w-11 rounded-xs bg-neutral-300 dark:bg-neutral-700" />
+          <div className="h-1.5 w-14 rounded-xs bg-neutral-300 dark:bg-neutral-700" />
+          <div className="h-1.5 flex-1 rounded-xs bg-neutral-300 dark:bg-neutral-700" />
+        </div>
+        <div className="flex gap-1.5 opacity-40">
+          <div className="h-1.5 w-7 rounded-xs bg-neutral-300 dark:bg-neutral-700" />
+          <div className="h-1.5 w-11 rounded-xs bg-neutral-300 dark:bg-neutral-700" />
+          <div className="h-1.5 w-14 rounded-xs bg-neutral-300 dark:bg-neutral-700" />
+          <div className="h-1.5 flex-1 rounded-xs bg-neutral-300 dark:bg-neutral-700" />
+        </div>
+        <div className="flex gap-1.5 opacity-20">
+          <div className="h-1.5 w-7 rounded-xs bg-neutral-300 dark:bg-neutral-700" />
+          <div className="h-1.5 w-11 rounded-xs bg-neutral-300 dark:bg-neutral-700" />
+          <div className="h-1.5 w-14 rounded-xs bg-neutral-300 dark:bg-neutral-700" />
+          <div className="h-1.5 flex-1 rounded-xs bg-neutral-300 dark:bg-neutral-700" />
+        </div>
+      </div>
+
+      {/* Bottom Tabs Bar (authentic chat_bridge thumbTabs) */}
+      <div className="flex items-center gap-1 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-100/90 dark:bg-[#18181b] px-2 py-1 overflow-x-hidden">
+        {tabs.map((tab, idx) => (
+          <span
+            key={tab}
+            className={`whitespace-nowrap px-1.5 py-0.5 rounded text-[9px] font-mono transition ${
+              idx === 0
+                ? 'bg-white dark:bg-neutral-800 text-emerald-600 dark:text-emerald-400 font-bold shadow-2xs border-t-2 border-emerald-500'
+                : 'text-neutral-400 dark:text-neutral-500'
+            }`}
+          >
+            {tab}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -62,8 +132,8 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
   const sheetsConfig = useAppStore((s) => s.sheetsConfig);
   const updateSheetsConfig = useAppStore((s) => s.updateSheetsConfig);
 
-  // 4 Studio Steps
-  const [activeStep, setActiveStep] = useState<1 | 2 | 3 | 4>(4);
+  // 4 Studio Steps: 1. OAuth, 2. Destination Sheet, 3. Tabs Strategy, 4. Columns Table
+  const [activeStep, setActiveStep] = useState<1 | 2 | 3 | 4>(2);
 
   // Layout Configuration State
   const [preset, setPreset] = useState<SheetLayoutPreset>(sheetsConfig.preset || 'single');
@@ -85,7 +155,57 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
   const [sheetName, setSheetName] = useState(sheetsConfig.sheetName);
   const [googleAccount] = useState(sheetsConfig.googleAccount || 'tuananh@gradion.ai');
   const [selectedFileName, setSelectedFileName] = useState(sheetsConfig.selectedFileName || 'ChatBridge_Transcripts_2026');
-  const [createMode, setCreateMode] = useState<'new' | 'existing'>(sheetsConfig.createMode || 'new');
+
+  // Autocomplete state
+  const [sheetSearchQuery, setSheetSearchQuery] = useState(selectedFileName);
+  const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
+  const autocompleteRef = useRef<HTMLDivElement>(null);
+
+  // Drive sheets mock list
+  const driveSheetsList = useMemo(() => [
+    { name: 'ChatBridge_Transcripts_2026', id: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms', modified: 'Vừa xong' },
+    { name: 'Q4_Enterprise_Sales_Pipeline', id: '1A98BCx2309kLMNz8943184', modified: 'Hôm qua' },
+    { name: 'APAC_Client_Communications_Log', id: '1C7719830219842189014', modified: '3 ngày trước' },
+    { name: 'Daily_Orders_Gradion_Log', id: '1D4421980018471209823', modified: '1 tuần trước' },
+    { name: 'Customer_Directory_Master', id: '1E8831092837401928341', modified: '2 tuần trước' },
+  ], []);
+
+  // Filtered sheets based on search query
+  const filteredSheets = useMemo(() => {
+    if (!sheetSearchQuery.trim()) return driveSheetsList;
+    return driveSheetsList.filter((s) =>
+      s.name.toLowerCase().includes(sheetSearchQuery.toLowerCase())
+    );
+  }, [driveSheetsList, sheetSearchQuery]);
+
+  // Click outside listener for Autocomplete
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (autocompleteRef.current && !autocompleteRef.current.contains(e.target as Node)) {
+        setIsAutocompleteOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelectSheet = (sheet: { name: string; id: string }) => {
+    setSelectedFileName(sheet.name);
+    setSpreadsheetId(sheet.id);
+    setSheetSearchQuery(sheet.name);
+    setIsAutocompleteOpen(false);
+    updateSheetsConfig({ selectedFileName: sheet.name, spreadsheetId: sheet.id });
+  };
+
+  const handleCreateNewSheet = (name: string) => {
+    const trimmed = name.trim() || 'New_ChatBridge_Spreadsheet';
+    const newId = '1' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    setSelectedFileName(trimmed);
+    setSpreadsheetId(newId);
+    setSheetSearchQuery(trimmed);
+    setIsAutocompleteOpen(false);
+    updateSheetsConfig({ selectedFileName: trimmed, spreadsheetId: newId, createMode: 'new' });
+  };
 
   // Unused columns in palette
   const unusedColumns = useMemo(
@@ -132,6 +252,7 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
     const side = dragOverCol?.side || 'after';
     const next = placeColumn(columns, draggedCol, target, side);
     setColumns(next);
+    updateSheetsConfig({ columns: next });
     draggedColRef.current = null;
     setDragOverCol(null);
   };
@@ -143,13 +264,17 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
 
   const addColumnToEnd = (col: SheetColumn) => {
     if (!columns.includes(col)) {
-      setColumns([...columns, col]);
+      const next = [...columns, col];
+      setColumns(next);
+      updateSheetsConfig({ columns: next });
     }
   };
 
   const removeColumn = (col: SheetColumn) => {
     if (columns.length > 1) {
-      setColumns(columns.filter((c) => c !== col));
+      const next = columns.filter((c) => c !== col);
+      setColumns(next);
+      updateSheetsConfig({ columns: next });
     }
   };
 
@@ -162,7 +287,6 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
       sheetName,
       googleAccount,
       selectedFileName,
-      createMode,
     });
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2200);
@@ -200,15 +324,22 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
     return list;
   }, [preset, includeContactsTab, isVi]);
 
-  // Ensure active tab is valid
   const currentTab = previewTabList.some((t) => t.id === activePreviewTab)
     ? activePreviewTab
     : previewTabList[0]?.id || 'messages';
 
+  // 4 Steps Definition
+  const STEPS_DATA = [
+    { step: 1 as const, titleEn: 'Google Account', titleVi: 'Tài khoản Google', badge: 'OAuth 2.0' },
+    { step: 2 as const, titleEn: 'Destination Sheet', titleVi: 'Nơi lưu trữ', badge: selectedFileName },
+    { step: 3 as const, titleEn: 'Tabs Strategy', titleVi: 'Cách chia Tab', badge: preset.toUpperCase() },
+    { step: 4 as const, titleEn: 'Table Workbench', titleVi: 'Kéo thả Cột', badge: `${columns.length} Cột` },
+  ];
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Studio Banner & Step Navigation */}
-      <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-[#161618] space-y-4 shadow-xs">
+    <div className="space-y-5 animate-in fade-in duration-200">
+      {/* Studio Banner & Header */}
+      <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-[#161618] space-y-4 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white p-1.5 ring-1 ring-neutral-200 dark:ring-neutral-700 shadow-xs flex items-center justify-center shrink-0">
@@ -238,7 +369,7 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
                 className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-neutral-700 dark:text-neutral-200 bg-neutral-200/60 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700"
                 onPress={onClose}
               >
-                {isVi ? 'Thu gọn' : 'Collapse Studio'}
+                {isVi ? 'Đóng' : 'Close'}
               </Button>
             )}
             <Button
@@ -252,40 +383,68 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
           </div>
         </div>
 
-        {/* 4 Step Selector Buttons */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-neutral-200/60 dark:border-neutral-800/80">
-          {[
-            { step: 1 as const, titleEn: '1. Google Account', titleVi: '1. Tài khoản Google', badge: 'OAuth 2.0' },
-            { step: 2 as const, titleEn: '2. Destination Sheet', titleVi: '2. Nơi lưu trữ', badge: 'ID Linked' },
-            { step: 3 as const, titleEn: '3. Tabs Strategy', titleVi: '3. Cách chia Tab', badge: preset.toUpperCase() },
-            { step: 4 as const, titleEn: '4. Drag & Drop Columns', titleVi: '4. Kéo thả Cột (Table)', badge: `${columns.length} Cols` },
-          ].map((item) => {
-            const isActive = activeStep === item.step;
-            return (
-              <button
-                key={item.step}
-                type="button"
-                onClick={() => setActiveStep(item.step)}
-                className={`p-2.5 rounded-xl border text-left transition select-none cursor-pointer flex flex-col justify-between ${
-                  isActive
-                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-neutral-900 dark:border-white shadow-xs'
-                    : 'bg-white/80 dark:bg-neutral-900/60 border-neutral-200/80 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-neutral-400'
-                }`}
-              >
-                <div className="font-semibold text-xs truncate">
-                  {isVi ? item.titleVi : item.titleEn}
-                </div>
-                <div className={`text-[10px] font-mono mt-1 ${isActive ? 'text-neutral-300 dark:text-neutral-600' : 'text-neutral-400'}`}>
-                  {item.badge}
-                </div>
-              </button>
-            );
-          })}
+        {/* =================================================================== */}
+        {/* PRO UI PROGRESS STEPPER (4 BƯỚC DẠNG PROGRESS)                      */}
+        {/* =================================================================== */}
+        <div className="pt-2 border-t border-neutral-200/60 dark:border-neutral-800/80">
+          <div className="relative flex items-center justify-between">
+            {/* Background connecting progress line track */}
+            <div className="absolute top-4 left-6 right-6 h-0.5 bg-neutral-200 dark:bg-neutral-800 -z-0" />
+            <div
+              className="absolute top-4 left-6 h-0.5 bg-emerald-500 transition-all duration-300 -z-0"
+              style={{ width: `${((activeStep - 1) / 3) * 100 * 0.88}%` }}
+            />
+
+            {STEPS_DATA.map((item) => {
+              const isActive = activeStep === item.step;
+              const isPassed = activeStep > item.step;
+
+              return (
+                <button
+                  key={item.step}
+                  type="button"
+                  onClick={() => setActiveStep(item.step)}
+                  className="group relative z-10 flex flex-col items-center text-center cursor-pointer select-none transition focus:outline-none"
+                >
+                  {/* Step circle indicator */}
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all shadow-xs ${
+                      isActive
+                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 ring-4 ring-emerald-500/20 scale-105'
+                        : isPassed
+                        ? 'bg-emerald-600 text-white shadow-emerald-500/20'
+                        : 'bg-white dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 hover:border-neutral-400'
+                    }`}
+                  >
+                    {isPassed ? <IconCheck className="w-4 h-4 stroke-[3]" /> : item.step}
+                  </div>
+
+                  {/* Step Title & Badge */}
+                  <div className="mt-1.5">
+                    <span
+                      className={`block text-[11px] font-semibold transition ${
+                        isActive
+                          ? 'text-neutral-900 dark:text-white font-bold'
+                          : isPassed
+                          ? 'text-neutral-700 dark:text-neutral-300'
+                          : 'text-neutral-400 dark:text-neutral-500'
+                      }`}
+                    >
+                      {isVi ? item.titleVi : item.titleEn}
+                    </span>
+                    <span className="text-[10px] text-neutral-400 font-mono hidden sm:block truncate max-w-[110px]">
+                      {item.badge}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
       {/* =================================================================== */}
-      {/* STEP 1: GOOGLE ACCOUNT                                              */}
+      {/* STEP 1: GOOGLE OAUTH ACCOUNT                                        */}
       {/* =================================================================== */}
       {activeStep === 1 && (
         <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-[#161618] space-y-4 animate-in fade-in duration-200">
@@ -329,143 +488,173 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
       )}
 
       {/* =================================================================== */}
-      {/* STEP 2: DESTINATION SPREADSHEET (CHỌN FILE LƯU TRÊN DRIVE)          */}
+      {/* STEP 2: DESTINATION SHEET (PRO UI AUTOCOMPLETE COMBOWORKBENCH)      */}
       {/* =================================================================== */}
       {activeStep === 2 && (
         <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-[#161618] space-y-4 animate-in fade-in duration-200">
           <div>
             <h4 className="text-sm font-bold text-neutral-900 dark:text-white">
-              {isVi ? 'Chọn file lưu trữ trên Google Drive' : 'Select Destination File on Google Drive'}
+              {isVi ? 'Nơi lưu trữ bảng tính (Google Spreadsheet Destination)' : 'Google Spreadsheet Destination'}
             </h4>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
               {isVi
-                ? 'Tạo mới hoặc chọn bảng tính có sẵn từ tài khoản Google Drive của bạn để lưu hội thoại.'
-                : 'Create a new spreadsheet or pick an existing sheet from your Google Drive storage.'}
+                ? 'Tìm kiếm bảng tính có sẵn trên Google Drive hoặc nhập tên để tạo mới ngay trong ô tự động gợi ý.'
+                : 'Search existing Google Drive sheets or type a new name to create one directly with Pro UI Autocomplete.'}
             </p>
           </div>
 
-          {/* Mode Selector */}
-          <div className="grid grid-cols-2 gap-2.5">
-            <button
-              type="button"
-              onClick={() => setCreateMode('new')}
-              className={`p-3 rounded-xl border text-left transition select-none cursor-pointer ${
-                createMode === 'new'
-                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-neutral-900 dark:border-white shadow-xs font-bold'
-                  : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-neutral-400'
-              }`}
-            >
-              <div className="text-xs">{isVi ? '📄 Tạo bảng tính mới' : '📄 Create New Spreadsheet'}</div>
-              <div className={`text-[10px] font-mono mt-0.5 ${createMode === 'new' ? 'text-neutral-300 dark:text-neutral-600' : 'text-neutral-400'}`}>
-                {isVi ? 'Tự tạo file mới trên Drive' : 'Auto-provision new sheet'}
-              </div>
-            </button>
+          {/* PRO UI AUTOCOMPLETE FIELD WITH CREATE OPTION */}
+          <div className="space-y-1.5" ref={autocompleteRef}>
+            <label className="text-xs font-bold text-neutral-900 dark:text-white flex items-center justify-between">
+              <span>{isVi ? 'Chọn hoặc tạo bảng tính Google Sheets' : 'Select or Create Google Spreadsheet'}</span>
+              <span className="text-[10px] text-neutral-400 font-normal">
+                {isVi ? 'Hỗ trợ tìm kiếm & tạo mới' : 'Supports search & instant creation'}
+              </span>
+            </label>
 
-            <button
-              type="button"
-              onClick={() => setCreateMode('existing')}
-              className={`p-3 rounded-xl border text-left transition select-none cursor-pointer ${
-                createMode === 'existing'
-                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-neutral-900 dark:border-white shadow-xs font-bold'
-                  : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-neutral-400'
-              }`}
-            >
-              <div className="text-xs">{isVi ? '📁 Chọn file từ Google Drive' : '📁 Pick from Google Drive'}</div>
-              <div className={`text-[10px] font-mono mt-0.5 ${createMode === 'existing' ? 'text-neutral-300 dark:text-neutral-600' : 'text-neutral-400'}`}>
-                {isVi ? 'Ghi nối vào sheet có sẵn' : 'Append to existing sheet'}
+            <div className="relative">
+              {/* Autocomplete Search Input */}
+              <div className="relative flex items-center">
+                <span className="absolute left-3 text-neutral-400 pointer-events-none">
+                  <IconSearch className="w-4 h-4" />
+                </span>
+                <input
+                  type="text"
+                  value={sheetSearchQuery}
+                  onChange={(e) => {
+                    setSheetSearchQuery(e.target.value);
+                    setIsAutocompleteOpen(true);
+                  }}
+                  onFocus={() => setIsAutocompleteOpen(true)}
+                  placeholder={isVi ? 'Tìm bảng tính trên Drive hoặc nhập tên mới...' : 'Search Google Drive sheets or type new name...'}
+                  className="w-full pl-9 pr-10 py-2.5 rounded-xl text-xs bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 font-semibold text-neutral-900 dark:text-white shadow-2xs transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsAutocompleteOpen(!isAutocompleteOpen)}
+                  className="absolute right-3 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 cursor-pointer text-xs"
+                >
+                  ▼
+                </button>
               </div>
-            </button>
-          </div>
 
-          {createMode === 'new' ? (
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-neutral-900 dark:text-white">
-                {isVi ? 'Tên file bảng tính mới' : 'New Spreadsheet File Name'}
-              </label>
-              <input
-                type="text"
-                value={selectedFileName}
-                onChange={(e) => setSelectedFileName(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
-                placeholder="ChatBridge_Transcripts_2026"
-              />
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-neutral-900 dark:text-white">
-                {isVi ? 'File tìm thấy trong Google Drive của bạn' : 'Files Found in Your Google Drive'}
-              </label>
-              <div className="space-y-1.5">
-                {[
-                  { name: 'ChatBridge_Transcripts_2026', id: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms', modified: 'Vừa xong' },
-                  { name: 'Q4_Enterprise_Sales_Pipeline', id: '1A98BCx2309kLMNz8943184', modified: 'Hôm qua' },
-                  { name: 'APAC_Client_Communications_Log', id: '1C7719830219842189014', modified: '3 ngày trước' },
-                ].map((file) => {
-                  const isChosen = selectedFileName === file.name;
-                  return (
-                    <div
-                      key={file.id}
-                      onClick={() => {
-                        setSelectedFileName(file.name);
-                        setSpreadsheetId(file.id);
-                      }}
-                      className={`p-2.5 rounded-xl border text-xs transition cursor-pointer select-none flex items-center justify-between ${
-                        isChosen
-                          ? 'bg-emerald-500/10 border-emerald-500 text-emerald-700 dark:text-emerald-300 font-semibold shadow-2xs'
-                          : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-neutral-400'
-                      }`}
+              {/* Autocomplete Dropdown Popover */}
+              {isAutocompleteOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1.5 p-1.5 rounded-2xl bg-white dark:bg-[#18181b] border border-neutral-200 dark:border-neutral-700 shadow-xl z-50 max-h-64 overflow-y-auto space-y-1 animate-in fade-in zoom-in-95 duration-100">
+                  {/* Option: Create New Spreadsheet */}
+                  {sheetSearchQuery.trim() && !driveSheetsList.some((s) => s.name.toLowerCase() === sheetSearchQuery.trim().toLowerCase()) && (
+                    <button
+                      type="button"
+                      onClick={() => handleCreateNewSheet(sheetSearchQuery)}
+                      className="w-full p-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-left transition flex items-center gap-2.5 cursor-pointer group"
                     >
-                      <div className="flex items-center gap-2.5 truncate">
-                        <span className="text-emerald-500 font-bold">📊</span>
-                        <span className="truncate">{file.name}</span>
+                      <div className="w-6 h-6 rounded-lg bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                        <IconPlus className="w-4 h-4 stroke-[3]" />
                       </div>
-                      <span className="text-[10px] text-neutral-400 font-mono shrink-0">
-                        {file.modified}
-                      </span>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold truncate">
+                          {isVi ? `+ Tạo bảng tính mới: "${sheetSearchQuery.trim()}"` : `+ Create new spreadsheet: "${sheetSearchQuery.trim()}"`}
+                        </div>
+                        <div className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5">
+                          {isVi ? 'Tự động cấp phát file mới trên Google Drive' : 'Auto-provisions new file on your Google Drive'}
+                        </div>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* Header of Fetched Drive Sheets */}
+                  <div className="px-2 py-1 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                    {isVi ? 'Bảng tính tìm thấy trên Google Drive' : 'Existing Google Drive Spreadsheets'}
+                  </div>
+
+                  {filteredSheets.length === 0 ? (
+                    <div className="p-3 text-center text-xs text-neutral-400">
+                      {isVi ? 'Không tìm thấy bảng tính phù hợp.' : 'No matching spreadsheets found.'}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-neutral-900 dark:text-white">
-                {isVi ? 'Mã Spreadsheet ID' : 'Google Spreadsheet ID'}
-              </label>
-              <input
-                type="text"
-                value={spreadsheetId}
-                onChange={(e) => setSpreadsheetId(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-mono"
-                placeholder="1BxiMVs0XRA5n..."
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-neutral-900 dark:text-white">
-                {isVi ? 'Tên Tab mặc định (Worksheet Tab)' : 'Base Worksheet Tab Name'}
-              </label>
-              <input
-                type="text"
-                value={sheetName}
-                onChange={(e) => setSheetName(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                placeholder="ChatBridge_Transcripts"
-              />
+                  ) : (
+                    filteredSheets.map((file) => {
+                      const isChosen = selectedFileName === file.name;
+                      return (
+                        <button
+                          key={file.id}
+                          type="button"
+                          onClick={() => handleSelectSheet(file)}
+                          className={`w-full p-2 rounded-xl text-left transition flex items-center justify-between cursor-pointer select-none ${
+                            isChosen
+                              ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold shadow-2xs'
+                              : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <span className="text-emerald-500 font-bold text-sm">📊</span>
+                            <span className="text-xs truncate">{file.name}</span>
+                          </div>
+                          <span className={`text-[10px] font-mono shrink-0 ${isChosen ? 'text-neutral-300 dark:text-neutral-600' : 'text-neutral-400'}`}>
+                            {file.modified}
+                          </span>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="pt-2 flex items-center justify-between">
+          {/* Active Selected Sheet Details Card */}
+          <div className="p-3.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="text-emerald-500 font-bold text-lg shrink-0">📊</span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-neutral-900 dark:text-white truncate">
+                    {selectedFileName}
+                  </span>
+                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                    .gsheet
+                  </span>
+                </div>
+                <span className="text-[10px] text-neutral-400 font-mono truncate block">
+                  ID: {spreadsheetId}
+                </span>
+              </div>
+            </div>
+
             <a
               href={`https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`}
               target="_blank"
               rel="noreferrer"
-              className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+              className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 shrink-0"
             >
-              <span>{isVi ? '↗ Mở trực tiếp trên Google Sheets' : '↗ Open live in Google Sheets'}</span>
+              <span>{isVi ? '↗ Mở trên Sheets' : '↗ Open in Sheets'}</span>
             </a>
+          </div>
+
+          {/* Base Worksheet Tab Name Input */}
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-neutral-900 dark:text-white">
+              {isVi ? 'Tên Tab mặc định (Worksheet Tab Name)' : 'Base Worksheet Tab Name'}
+            </label>
+            <input
+              type="text"
+              value={sheetName}
+              onChange={(e) => {
+                setSheetName(e.target.value);
+                updateSheetsConfig({ sheetName: e.target.value });
+              }}
+              className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium"
+              placeholder="ChatBridge_Transcripts"
+            />
+          </div>
+
+          <div className="pt-2 flex items-center justify-between">
+            <Button
+              size="sm"
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800"
+              onPress={() => setActiveStep(1)}
+            >
+              <span>← Quay lại</span>
+            </Button>
 
             <Button
               size="sm"
@@ -479,54 +668,85 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
       )}
 
       {/* =================================================================== */}
-      {/* STEP 3: TABS STRATEGY                                               */}
+      {/* STEP 3: TABS STRATEGY WITH AUTHENTIC CHAT_BRIDGE MINI THUMBNAILS     */}
       {/* =================================================================== */}
       {activeStep === 3 && (
-        <div className="space-y-5 animate-in fade-in duration-200">
+        <div className="space-y-4 animate-in fade-in duration-200">
           <div className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-[#161618] text-xs text-neutral-600 dark:text-neutral-300">
             {isVi
               ? 'Chọn cách chia tin nhắn vào các trang tính. Hệ thống sẽ tự động tạo tab mới theo quy tắc khi có tin nhắn mới phát sinh.'
               : 'Choose how messages are distributed across spreadsheet tabs. New sheets will be automatically provisioned when messages match criteria.'}
           </div>
 
-          {/* 6 Strategy Cards */}
+          {/* 6 Strategy Cards with authentic LayoutThumb illustrations */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {[
-              { id: 'single' as SheetLayoutPreset, labelEn: 'Single Tab (Default)', labelVi: 'Một trang tính (Mặc định)', example: 'Messages / Tin nhắn', desc: 'All messages streamed into one master table' },
-              { id: 'daily' as SheetLayoutPreset, labelEn: 'Daily Tab', labelVi: 'Mỗi ngày một tab', example: '2026-11-14 (UTC+7)', desc: 'Automatic clean daily log sheets' },
-              { id: 'monthly' as SheetLayoutPreset, labelEn: 'Monthly Tab', labelVi: 'Mỗi tháng một tab', example: '2026-11 (UTC+7)', desc: 'Organized by accounting billing period' },
-              { id: 'network' as SheetLayoutPreset, labelEn: 'By App Network', labelVi: 'Mỗi ứng dụng một tab', example: 'Zalo, WhatsApp', desc: 'Separate domestic & international clients' },
-              { id: 'contact' as SheetLayoutPreset, labelEn: 'By Contact Customer', labelVi: 'Mỗi khách hàng một tab', example: 'Lan, Marcus, Tuấn', desc: 'Dedicated ledger per customer relationship' },
-              { id: 'custom' as SheetLayoutPreset, labelEn: 'Custom Pattern', labelVi: 'Tuỳ chỉnh công thức', example: '{App} - {Month}', desc: 'Pattern formula or keyword routing' },
+              { id: 'single' as SheetLayoutPreset, labelEn: 'Single Tab (Default)', labelVi: 'Một trang tính (Mặc định)', example: 'Messages / Tin nhắn', desc: 'Toàn bộ tin nhắn được gom vào 1 bảng duy nhất' },
+              { id: 'daily' as SheetLayoutPreset, labelEn: 'Daily Tab', labelVi: 'Mỗi ngày một tab', example: '2026-11-14 (UTC+7)', desc: 'Tự động tạo tab riêng biệt theo từng ngày' },
+              { id: 'monthly' as SheetLayoutPreset, labelEn: 'Monthly Tab', labelVi: 'Mỗi tháng một tab', example: '2026-11 (UTC+7)', desc: 'Gom theo kỳ thanh toán và chu kỳ kế toán' },
+              { id: 'network' as SheetLayoutPreset, labelEn: 'By App Network', labelVi: 'Theo ứng dụng', example: 'Zalo, WhatsApp', desc: 'Tách riêng khách hàng nội địa và quốc tế' },
+              { id: 'contact' as SheetLayoutPreset, labelEn: 'By Contact Customer', labelVi: 'Theo khách hàng', example: 'Lan, Marcus, Tuấn', desc: 'Mỗi khách hàng có một sổ cái riêng biệt' },
+              { id: 'custom' as SheetLayoutPreset, labelEn: 'Custom Pattern', labelVi: 'Công thức tùy chỉnh', example: '{App} - {Month}', desc: 'Định dạng linh hoạt theo biến số' },
             ].map((card) => {
               const isSelected = preset === card.id;
               return (
                 <div
                   key={card.id}
-                  onClick={() => setPreset(card.id)}
-                  className={`p-4 rounded-2xl border transition-all select-none cursor-pointer space-y-2 ${
+                  onClick={() => {
+                    setPreset(card.id);
+                    updateSheetsConfig({ preset: card.id });
+                  }}
+                  className={`p-3.5 rounded-2xl border transition-all select-none cursor-pointer flex flex-col justify-between gap-3 ${
                     isSelected
-                      ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-neutral-900 dark:border-white shadow-md ring-1 ring-black/10 dark:ring-white/20'
+                      ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-neutral-900 dark:border-white shadow-md ring-2 ring-emerald-500/20'
                       : 'bg-neutral-50/70 dark:bg-[#161618] border-neutral-200/90 dark:border-neutral-800 hover:border-neutral-400'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs">{isVi ? card.labelVi : card.labelEn}</span>
-                    <span className={`text-[10px] font-mono ${isSelected ? 'text-neutral-300 dark:text-neutral-600' : 'text-neutral-400'}`}>
-                      {card.example}
-                    </span>
+                  {/* Authentic chat_bridge Visual Thumbnail */}
+                  <LayoutThumb preset={card.id} />
+
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs">{isVi ? card.labelVi : card.labelEn}</span>
+                      <span className={`text-[10px] font-mono ${isSelected ? 'text-neutral-300 dark:text-neutral-600' : 'text-neutral-400'}`}>
+                        {card.example}
+                      </span>
+                    </div>
+                    <p className={`text-[11px] leading-relaxed ${isSelected ? 'text-neutral-200 dark:text-neutral-700' : 'text-neutral-500 dark:text-neutral-400'}`}>
+                      {card.desc}
+                    </p>
                   </div>
-                  <p className={`text-[11px] leading-relaxed ${isSelected ? 'text-neutral-200 dark:text-neutral-700' : 'text-neutral-500 dark:text-neutral-400'}`}>
-                    {card.desc}
-                  </p>
                 </div>
               );
             })}
           </div>
 
+          {/* Authentic chat_bridge Sample Tabs Bar */}
+          <div className="p-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-100/70 dark:bg-[#161618] flex items-center gap-2 overflow-x-auto text-[11px]">
+            <span className="text-neutral-400 font-mono font-bold shrink-0">＋ ≡</span>
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+              {previewTabList.map((t, idx) => (
+                <span
+                  key={t.id}
+                  className={`px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold transition shrink-0 ${
+                    idx === 0
+                      ? 'bg-white dark:bg-neutral-800 text-emerald-600 dark:text-emerald-400 shadow-2xs border-t-2 border-emerald-500'
+                      : 'text-neutral-500 dark:text-neutral-400'
+                  }`}
+                >
+                  {t.label}
+                </span>
+              ))}
+            </div>
+          </div>
+
           {/* Contacts Summary Tab Checkbox */}
           <div
-            onClick={() => setIncludeContactsTab(!includeContactsTab)}
+            onClick={() => {
+              const next = !includeContactsTab;
+              setIncludeContactsTab(next);
+              updateSheetsConfig({ includeContactsTab: next });
+            }}
             className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-[#161618] flex items-center justify-between cursor-pointer select-none"
           >
             <div className="flex items-center gap-3">
@@ -552,320 +772,236 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
             </span>
           </div>
 
-          <div className="pt-2 flex items-center justify-end">
+          <div className="pt-2 flex items-center justify-between">
+            <Button
+              size="sm"
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800"
+              onPress={() => setActiveStep(2)}
+            >
+              <span>← Quay lại</span>
+            </Button>
+
             <Button
               size="sm"
               className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 cursor-pointer"
               onPress={() => setActiveStep(4)}
             >
-              <span>{isVi ? 'Tiếp tục: Kéo thả Cột (Table) →' : 'Next: Drag & Drop Columns (Table) →'}</span>
+              <span>{isVi ? 'Tiếp tục: Kéo thả Cột (Table) →' : 'Next: Drag & Drop Columns →'}</span>
             </Button>
           </div>
         </div>
       )}
 
       {/* =================================================================== */}
-      {/* STEP 4: INTERACTIVE DRAG & DROP COLUMNS WORKBENCH                   */}
+      {/* STEP 4: DRAG & DROP COLUMN WORKBENCH & SPREADSHEET LIVE PREVIEW     */}
       {/* =================================================================== */}
       {activeStep === 4 && (
         <div className="space-y-4 animate-in fade-in duration-200">
-          {/* Top Instruction Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 rounded-2xl border border-neutral-200/90 dark:border-neutral-800 bg-neutral-50/70 dark:bg-[#161618] text-xs">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-              <span className="font-medium text-neutral-700 dark:text-neutral-300">
-                {isVi
-                  ? 'Kéo thẻ từ "Trường dữ liệu" thả vào tiêu đề bảng để chèn cột. Kéo tiêu đề cột để đổi vị trí, hoặc bấm × để xoá.'
-                  : 'Drag fields into the table header to insert columns. Drag existing column headers to reorder, or click × to remove.'}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-[11px] font-mono text-neutral-400">
-                {columns.length} columns active
-              </span>
-            </div>
-          </div>
-
-          {/* Workbench Grid: Left Field Palette + Right Interactive Table */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-            {/* 1. LEFT PALETTE: Available Unused Fields */}
-            <div className="lg:col-span-3 p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-[#161618] space-y-3">
-              <div>
-                <h4 className="text-xs font-bold text-neutral-900 dark:text-white uppercase tracking-wider flex items-center justify-between">
-                  <span>{isVi ? 'Trường dữ liệu' : 'Data Fields'}</span>
-                  <span className="text-[10px] font-mono font-normal text-neutral-400">
-                    {unusedColumns.length} available
-                  </span>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-start">
+            {/* Field Palette (Cột có thể thêm) */}
+            <div className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-[#161618] space-y-3 lg:col-span-1">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-neutral-900 dark:text-white uppercase tracking-wider">
+                  {isVi ? 'Trường dữ liệu' : 'Field Palette'}
                 </h4>
-                <p className="text-[11px] text-neutral-400 mt-0.5">
-                  {unusedColumns.length > 0
-                    ? isVi ? 'Kéo thả vào bảng hoặc nhấp để thêm' : 'Drag into table or click to append'
-                    : isVi ? 'Tất cả các cột đã có trên bảng' : 'All available fields placed'}
-                </p>
+                <span className="text-[10px] font-mono text-neutral-400">
+                  {unusedColumns.length} còn lại
+                </span>
               </div>
+              <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                {isVi ? 'Bấm để thêm cột vào bảng tính' : 'Click to add column to sheet'}
+              </p>
 
-              {unusedColumns.length === 0 ? (
-                <div className="p-4 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700 text-center text-xs text-neutral-400">
-                  {isVi ? '✓ Tất cả các trường đã được thêm vào trang tính' : '✓ All data fields are placed in spreadsheet'}
-                </div>
-              ) : (
-                <div className="space-y-1.5">
-                  {unusedColumns.map((col) => (
-                    <div
+              <div className="space-y-1.5">
+                {unusedColumns.length === 0 ? (
+                  <div className="p-3 text-center rounded-xl bg-neutral-100 dark:bg-neutral-800 text-[11px] text-neutral-400">
+                    {isVi ? 'Đã thêm tất cả các cột' : 'All available columns added'}
+                  </div>
+                ) : (
+                  unusedColumns.map((col) => (
+                    <button
                       key={col.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, col.id)}
-                      onDragEnd={handleDragEnd}
+                      type="button"
                       onClick={() => addColumnToEnd(col.id)}
-                      className="p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-emerald-500/80 dark:hover:border-emerald-500 hover:shadow-sm transition flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing select-none group"
+                      className="w-full p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-emerald-500 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 text-left transition text-xs font-medium flex items-center justify-between group cursor-pointer"
                     >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <IconGrip className="w-3.5 h-3.5 text-neutral-400 group-hover:text-emerald-500 shrink-0" />
-                        <span className="font-semibold text-xs text-neutral-800 dark:text-neutral-200 truncate">
-                          {isVi ? col.labelVi : col.labelEn}
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-neutral-400 group-hover:text-emerald-500 font-bold shrink-0">
-                        + Add
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
+                      <span className="truncate">{isVi ? col.labelVi : col.labelEn}</span>
+                      <IconPlus className="w-3.5 h-3.5 text-neutral-400 group-hover:text-emerald-500" />
+                    </button>
+                  ))
+                )}
+              </div>
             </div>
 
-            {/* 2. RIGHT SPREADSHEET TABLE PREVIEW */}
-            <div className="lg:col-span-9 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#18181b] overflow-hidden shadow-sm flex flex-col">
-              {/* Spreadsheet Toolbar */}
-              <div className="px-4 py-2 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100/60 dark:bg-neutral-900/60 flex items-center justify-between text-xs font-mono text-neutral-500">
-                <div className="flex items-center gap-3">
-                  <span className="flex items-center gap-1.5 font-sans font-bold text-neutral-800 dark:text-neutral-200">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    Google Sheets Table Editor
+            {/* Active Columns Workbench (Kéo thả sắp xếp) */}
+            <div className="lg:col-span-3 space-y-3">
+              <div className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-[#161618] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-neutral-900 dark:text-white">
+                    {isVi ? 'Thứ tự các Cột trong bảng tính (Kéo thả để sắp xếp)' : 'Active Columns (Drag to Reorder)'}
+                  </h4>
+                  <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                    {columns.length} Cột Đang Bật
                   </span>
-                  <span>•</span>
-                  <span>Sheet ID: {spreadsheetId.slice(0, 16)}...</span>
                 </div>
-                <span>7 sample rows loaded</span>
-              </div>
 
-              {/* Scrollable Table Area */}
-              <div className="overflow-x-auto max-h-[380px] overflow-y-auto scrollbar-thin">
-                <table className="w-full text-left text-xs border-collapse">
-                  {/* Table Header: Column Letters & Drag-and-Drop Column Heads */}
-                  <thead className="sticky top-0 z-10 bg-neutral-50 dark:bg-[#121214] border-b border-neutral-200 dark:border-neutral-800">
-                    {/* Top Row: Column Letters A, B, C, D... */}
-                    <tr className="border-b border-neutral-200/50 dark:border-neutral-800/50 text-[10px] font-mono text-neutral-400">
-                      <th className="w-10 px-2 py-1 text-center bg-neutral-100 dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800">
-                        #
-                      </th>
-                      {columns.map((_, i) => (
-                        <th
-                          key={i}
-                          className="px-3 py-1 text-center font-bold border-r border-neutral-200 dark:border-neutral-800 bg-neutral-100/50 dark:bg-neutral-900/50"
-                        >
-                          {columnLetter(i)}
-                        </th>
-                      ))}
-                      <th className="px-3 py-1 text-center text-neutral-400">
-                        {columnLetter(columns.length)}
-                      </th>
-                    </tr>
-
-                    {/* Main Row: Column Names with Grip Handle & Delete button */}
-                    <tr>
-                      <th className="w-10 px-2 py-2 text-center font-mono text-[10px] text-neutral-400 bg-neutral-100 dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800">
-                        1
-                      </th>
-                      {columns.map((colKey) => {
-                        const colDef = allSheetColumns.find((c) => c.id === colKey);
-                        const isOver = dragOverCol?.target === colKey;
-                        const dropIndicatorClass = isOver
-                          ? dragOverCol.side === 'before'
-                            ? 'border-l-3 border-l-emerald-500 bg-emerald-500/10'
-                            : 'border-r-3 border-r-emerald-500 bg-emerald-500/10'
-                          : '';
-
-                        return (
-                          <th
-                            key={colKey}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, colKey)}
-                            onDragOver={(e) => handleDragOver(e, colKey)}
-                            onDragLeave={handleDragLeave}
-                            onDrop={(e) => handleDrop(e, colKey)}
-                            onDragEnd={handleDragEnd}
-                            className={`px-3 py-2.5 font-bold text-neutral-900 dark:text-white border-r border-neutral-200 dark:border-neutral-800 transition cursor-grab active:cursor-grabbing select-none group min-w-[140px] ${dropIndicatorClass}`}
-                          >
-                            <div className="flex items-center justify-between gap-1.5">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <IconGrip className="w-3.5 h-3.5 text-neutral-400 group-hover:text-emerald-500 shrink-0" />
-                                <span className="truncate">
-                                  {isVi ? colDef?.labelVi : colDef?.labelEn}
-                                </span>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  removeColumn(colKey);
-                                }}
-                                disabled={columns.length === 1}
-                                className="w-4 h-4 rounded-md text-neutral-400 hover:text-rose-500 hover:bg-neutral-200 dark:hover:bg-neutral-800 flex items-center justify-center text-xs opacity-70 group-hover:opacity-100 disabled:opacity-20 cursor-pointer"
-                                title="Remove column"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          </th>
-                        );
-                      })}
-
-                      {/* Drop Target Cell at end of row */}
-                      <th
-                        onDragOver={(e) => handleDragOver(e, null)}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, null)}
-                        className={`px-4 py-2.5 border-dashed border-2 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-semibold text-center text-xs min-w-[120px] transition ${
-                          dragOverCol?.target === null ? 'bg-emerald-500/15 border-emerald-500' : 'bg-transparent'
+                <div
+                  onDragOver={(e) => handleDragOver(e, null)}
+                  onDrop={(e) => handleDrop(e, null)}
+                  className="p-2.5 rounded-xl bg-white dark:bg-black/40 border border-neutral-200/80 dark:border-neutral-800 flex flex-wrap gap-2 min-h-[52px] items-center"
+                >
+                  {columns.map((col) => {
+                    const colDef = allSheetColumns.find((c) => c.id === col);
+                    const isDragOver = dragOverCol?.target === col;
+                    return (
+                      <div
+                        key={col}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, col)}
+                        onDragOver={(e) => handleDragOver(e, col)}
+                        onDrop={(e) => handleDrop(e, col)}
+                        onDragEnd={handleDragEnd}
+                        className={`group px-2.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-2 cursor-grab active:cursor-grabbing select-none transition shadow-2xs ${
+                          isDragOver
+                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300'
+                            : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 hover:border-neutral-400'
                         }`}
                       >
-                        + {isVi ? 'Thả vào đây' : 'Drop Here'}
-                      </th>
-                    </tr>
-                  </thead>
+                        <IconGrip className="w-3.5 h-3.5 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-200" />
+                        <span>{isVi ? colDef?.labelVi : colDef?.labelEn || col}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeColumn(col);
+                          }}
+                          className="text-neutral-400 hover:text-rose-500 text-xs px-1 rounded cursor-pointer"
+                          title="Bỏ cột này"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-                  {/* Table Body with Realistic Sample Message Transcripts */}
-                  <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
-                    {currentTab === 'contacts' ? (
-                      // Contacts Summary Rows
-                      sampleContacts.map((contact, idx) => (
-                        <tr
-                          key={contact.name}
-                          className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition font-mono text-[11px]"
-                        >
-                          <td className="w-10 px-2 py-2 text-center text-[10px] text-neutral-400 bg-neutral-100/50 dark:bg-neutral-900/50 border-r border-neutral-200 dark:border-neutral-800 font-mono">
-                            {idx + 2}
-                          </td>
-                          <td className="px-3 py-2 border-r border-neutral-200 dark:border-neutral-800 font-sans font-bold text-neutral-900 dark:text-white">
-                            {contact.name}
-                          </td>
-                          <td className="px-3 py-2 border-r border-neutral-200 dark:border-neutral-800">
-                            {contact.phone}
-                          </td>
-                          <td className="px-3 py-2 border-r border-neutral-200 dark:border-neutral-800">
-                            <span className="font-sans px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[10px]">
-                              {contact.network}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2 border-r border-neutral-200 dark:border-neutral-800">
-                            {contact.count} messages
-                          </td>
-                          {Array.from({ length: Math.max(0, columns.length - 3) }).map((_, emptyIdx) => (
-                            <td key={emptyIdx} className="px-3 py-2 border-r border-neutral-200 dark:border-neutral-800 text-neutral-300">
-                              —
+              {/* Live Google Sheets Spreadsheet Preview Table */}
+              <div className="rounded-2xl border border-neutral-300 dark:border-neutral-700/80 bg-white dark:bg-[#0c0d0e] overflow-hidden shadow-xs flex flex-col">
+                {/* Table Formula Bar */}
+                <div className="h-8 px-3 rounded-t-xl bg-neutral-100 dark:bg-[#161618] border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2 text-[11px] font-mono text-neutral-500">
+                  <span className="font-bold text-neutral-400 italic">fx</span>
+                  <div className="h-3 w-px bg-neutral-300 dark:bg-neutral-700" />
+                  <span className="text-neutral-700 dark:text-neutral-300 truncate">
+                    =CHATBRIDGE_STREAM(&quot;{selectedFileName}&quot;, &quot;{currentTab}&quot;) • {columns.length} columns active
+                  </span>
+                </div>
+
+                {/* Table Viewport */}
+                <div className="max-h-72 overflow-auto scrollbar-thin">
+                  <table className="w-full text-xs border-collapse font-sans">
+                    <thead>
+                      {/* Letters Row (A, B, C...) */}
+                      <tr className="bg-neutral-100 dark:bg-[#18181b] border-b border-neutral-200 dark:border-neutral-800 text-neutral-500 font-mono text-[10px]">
+                        <th className="w-8 p-1 text-center border-r border-neutral-200 dark:border-neutral-800">◢</th>
+                        {columns.map((col, idx) => (
+                          <th key={col} className="p-1 text-center border-r border-neutral-200 dark:border-neutral-800 font-semibold text-neutral-600 dark:text-neutral-300">
+                            {columnLetter(idx)}
+                          </th>
+                        ))}
+                      </tr>
+                      {/* Header Row (Row 1) */}
+                      <tr className="bg-emerald-50/60 dark:bg-emerald-950/20 border-b border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-100 font-semibold text-[11px]">
+                        <td className="p-1.5 text-center font-mono text-[10px] text-neutral-400 border-r border-neutral-200 dark:border-neutral-800 bg-neutral-100/50 dark:bg-[#18181b]/50">
+                          1
+                        </td>
+                        {columns.map((col) => {
+                          const colDef = allSheetColumns.find((c) => c.id === col);
+                          return (
+                            <td key={col} className="p-2 border-r border-neutral-200 dark:border-neutral-800 text-left font-bold text-emerald-800 dark:text-emerald-400 truncate">
+                              {isVi ? colDef?.labelVi : colDef?.labelEn || col}
                             </td>
-                          ))}
-                          <td className="px-3 py-2 text-neutral-300" />
-                        </tr>
-                      ))
-                    ) : (
-                      // Messages Rows matching current layout columns
-                      sampleMessages.map((msg, idx) => (
-                        <tr
-                          key={msg.id}
-                          className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition font-mono text-[11px]"
-                        >
-                          <td className="w-10 px-2 py-2 text-center text-[10px] text-neutral-400 bg-neutral-100/50 dark:bg-neutral-900/50 border-r border-neutral-200 dark:border-neutral-800 font-mono">
-                            {idx + 2}
+                          );
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-neutral-200/60 dark:divide-neutral-800/60 text-neutral-700 dark:text-neutral-300 text-[11px]">
+                      {sampleMessages.slice(0, 5).map((msg, rIdx) => (
+                        <tr key={msg.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/40">
+                          <td className="p-1.5 text-center font-mono text-[10px] text-neutral-400 border-r border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30">
+                            {rIdx + 2}
                           </td>
-                          {columns.map((colKey) => {
-                            let cellContent = '';
-                            if (colKey === 'time') cellContent = msg.time.replace('T', ' ').slice(0, 16);
-                            else if (colKey === 'network') cellContent = msg.network === 'zalo' ? 'Zalo' : 'WhatsApp';
-                            else if (colKey === 'chat') cellContent = msg.chat;
-                            else if (colKey === 'direction') cellContent = msg.direction === 'inbound' ? 'Inbound' : 'Outbound';
-                            else if (colKey === 'sender') cellContent = msg.sender;
-                            else if (colKey === 'phone') cellContent = msg.phone || '—';
-                            else if (colKey === 'text') cellContent = msg.text;
-                            else if (colKey === 'id') cellContent = msg.id;
+                          {columns.map((col) => {
+                            let val = '';
+                            if (col === 'time') val = msg.time.replace('T', ' ').slice(0, 16);
+                            else if (col === 'network') val = msg.network.toUpperCase();
+                            else if (col === 'chat') val = msg.chat;
+                            else if (col === 'direction') val = msg.direction === 'inbound' ? 'Inbound' : 'Outbound';
+                            else if (col === 'sender') val = msg.sender;
+                            else if (col === 'phone') val = msg.phone || '—';
+                            else if (col === 'text') val = msg.text;
+                            else if (col === 'id') val = msg.id;
 
                             return (
-                              <td
-                                key={colKey}
-                                className="px-3 py-2 border-r border-neutral-200 dark:border-neutral-800 truncate max-w-[240px] text-neutral-800 dark:text-neutral-200 font-sans"
-                                title={cellContent}
-                              >
-                                {colKey === 'network' ? (
-                                  <span
-                                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                      msg.network === 'zalo'
-                                        ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                                        : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                                    }`}
-                                  >
-                                    {cellContent}
-                                  </span>
-                                ) : colKey === 'direction' ? (
-                                  <span
-                                    className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono ${
-                                      msg.direction === 'inbound'
-                                        ? 'text-neutral-700 dark:text-neutral-300 bg-neutral-200/60 dark:bg-neutral-800'
-                                        : 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40'
-                                    }`}
-                                  >
-                                    {cellContent}
-                                  </span>
-                                ) : (
-                                  cellContent
-                                )}
+                              <td key={col} className="p-2 border-r border-neutral-200 dark:border-neutral-800 text-left truncate max-w-[200px]">
+                                {val}
                               </td>
                             );
                           })}
-                          <td className="px-3 py-2 text-neutral-300" />
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
-              {/* Bottom Google Sheets Tab Bar (Authentic Sheets UI) */}
-              <div className="px-3 py-1.5 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-100/80 dark:bg-neutral-900/80 flex items-center gap-1.5 overflow-x-auto scrollbar-thin">
-                <button
-                  type="button"
-                  className="w-6 h-6 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-800 flex items-center justify-center text-neutral-500 hover:text-neutral-900 dark:hover:text-white shrink-0 cursor-pointer"
-                  title="Add Sheet"
-                >
-                  <IconPlus className="w-3.5 h-3.5" />
-                </button>
+                {/* Bottom Sheet Tab Bar */}
+                <div className="h-8 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-100/90 dark:bg-[#141416] px-2 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1 overflow-x-auto">
+                    <span className="text-neutral-400 font-mono text-[10px] px-1 font-bold">＋ ≡</span>
+                    {previewTabList.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setActivePreviewTab(t.id)}
+                        className={`px-3 py-1 rounded-t border-t-2 text-[11px] font-medium transition cursor-pointer select-none shrink-0 ${
+                          currentTab === t.id
+                            ? 'bg-white dark:bg-[#0c0d0e] border-emerald-500 text-neutral-900 dark:text-white font-bold shadow-2xs'
+                            : 'border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-300'
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
 
-                <div className="h-4 w-[1px] bg-neutral-300 dark:bg-neutral-700 mx-1 shrink-0" />
-
-                {previewTabList.map((tab) => {
-                  const isActiveTab = currentTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setActivePreviewTab(tab.id)}
-                      className={`px-3 py-1 rounded-t-lg text-xs font-semibold transition cursor-pointer select-none shrink-0 flex items-center gap-1.5 border-b-2 ${
-                        isActiveTab
-                          ? 'bg-white dark:bg-[#18181b] text-emerald-600 dark:text-emerald-400 border-emerald-500 shadow-xs'
-                          : 'bg-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white border-transparent'
-                      }`}
-                    >
-                      <span>{tab.label}</span>
-                    </button>
-                  );
-                })}
+                  <span className="text-[10px] text-neutral-400 font-mono shrink-0 pl-2">
+                    100%
+                  </span>
+                </div>
               </div>
             </div>
+          </div>
+
+          <div className="pt-2 flex items-center justify-between">
+            <Button
+              size="sm"
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800"
+              onPress={() => setActiveStep(3)}
+            >
+              <span>← Quay lại</span>
+            </Button>
+
+            <Button
+              size="sm"
+              className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 cursor-pointer shadow-xs"
+              onPress={handleSaveLayout}
+            >
+              <IconCheck className="w-3.5 h-3.5" />
+              <span>{saveSuccess ? (isVi ? 'Đã lưu bố cục!' : 'Layout Saved!') : (isVi ? 'Hoàn tất & Lưu bố cục' : 'Finish & Save Layout')}</span>
+            </Button>
           </div>
         </div>
       )}
     </div>
   );
 }
-

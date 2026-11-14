@@ -130,15 +130,6 @@ const SETTINGS_SECTIONS: SectionItem[] = [
     badge: (s) => (s.crmActive ? '2 Targets Ready' : '1 Target Ready'),
   },
   {
-    id: 'sheets',
-    title: 'Google Sheets Studio',
-    titleVi: 'Định dạng Google Sheets',
-    subtitle: 'Drag & drop column layout, tab strategy & live table preview',
-    subtitleVi: 'Kéo thả chọn cột, bố cục trang tính và xem trước bảng tính trực tiếp',
-    icon: IconGoogleSheets,
-    badge: () => 'Drag & Drop Table',
-  },
-  {
     id: 'noise',
     title: 'Drop Noise',
     titleVi: 'Bỏ tin nhiễu',
@@ -197,6 +188,7 @@ export function SettingsScreen() {
   const [crmTestResult, setCrmTestResult] = useState<string | null>(null);
   const [sheetsTesting, setSheetsTesting] = useState(false);
   const [sheetsTestResult, setSheetsTestResult] = useState<string | null>(null);
+  const [showSheetsStudio, setShowSheetsStudio] = useState(false);
   const [newBlockedPhrase, setNewBlockedPhrase] = useState('');
 
   // Keyboard shortcut: Esc to return to chats
@@ -706,18 +698,27 @@ export function SettingsScreen() {
                     <div className="pt-2 border-t border-neutral-200/50 dark:border-neutral-800/60 flex items-center justify-between">
                       <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
                         {isVi
-                          ? 'Tùy chỉnh định dạng bảng tính, kéo thả sắp xếp cột và cấu hình chia tab.'
-                          : 'Customize spreadsheet format, drag-and-drop table columns, and configure tab rules.'}
+                          ? 'Tùy chỉnh định dạng bảng tính, 4 bước trực quan, tự động tạo spreadsheet và bố cục chia tab.'
+                          : 'Customize spreadsheet format, 4-step studio flow, auto-complete spreadsheet creation and tab layout.'}
                       </p>
                       <Button
                         size="sm"
                         className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-300/80 dark:border-emerald-800 transition cursor-pointer flex items-center gap-1.5 shrink-0"
-                        onPress={() => setSettingsTab('sheets')}
+                        onPress={() => setShowSheetsStudio((prev) => !prev)}
                       >
-                        <span>{isVi ? 'Mở Sheet Studio (Kéo thả cột & Preview)' : 'Open Sheet Studio (Drag & Drop Table)'}</span>
-                        <span>→</span>
+                        <span>
+                          {showSheetsStudio
+                            ? (isVi ? 'Thu gọn Sheet Studio ▲' : 'Collapse Sheet Studio ▲')
+                            : (isVi ? 'Mở Sheet Studio (Kéo thả cột & Preview) ▼' : 'Open Sheet Studio (Drag & Drop Table) ▼')}
+                        </span>
                       </Button>
                     </div>
+
+                    {showSheetsStudio && (
+                      <div className="pt-4 border-t border-neutral-200/70 dark:border-neutral-800/80 animate-in fade-in duration-200">
+                        <GoogleSheetsStudio isVi={isVi} onClose={() => setShowSheetsStudio(false)} />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
