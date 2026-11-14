@@ -31,15 +31,10 @@ export function Step3SelectConversations({
   ).length;
 
   return (
-    <div className="space-y-3 animate-in fade-in duration-200">
-      {/* Channel sub-bar: Selected count & Select All toggle */}
-      <div className="flex items-center justify-between px-1 pb-1">
+    <div className="flex flex-col h-full space-y-2.5 animate-in fade-in duration-200">
+      {/* Channel sub-bar: Selected count & Select All toggle (App icon removed) */}
+      <div className="flex items-center justify-between px-1 pb-1 shrink-0">
         <div className="flex items-center gap-2">
-          <img
-            src={isZalo ? zaloLogo : whatsappLogo}
-            alt={isZalo ? 'Zalo' : 'WhatsApp'}
-            className="w-4 h-4 object-contain"
-          />
           <span className="text-xs font-bold text-neutral-900 dark:text-white">
             {isZalo ? 'Zalo Conversations' : 'WhatsApp Conversations'}{' '}
             <span className="text-neutral-400 font-normal">
@@ -57,8 +52,8 @@ export function Step3SelectConversations({
         </button>
       </div>
 
-      {/* 1:1 Contact List matching main UI styling */}
-      <div className="space-y-1.5 max-h-[350px] overflow-y-auto pr-1 scrollbar-thin">
+      {/* 1:1 Contact List matching main UI styling - Full height without max-h cap */}
+      <div className="flex-1 space-y-1.5 overflow-y-auto pr-1 pb-2 scrollbar-thin">
         {displayedChats.map((chat) => {
           const isSelected = selectedChatIds.includes(chat.id);
           const isPreviewing = previewChatId === chat.id;

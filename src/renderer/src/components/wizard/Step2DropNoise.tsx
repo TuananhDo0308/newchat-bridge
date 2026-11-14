@@ -123,207 +123,238 @@ interface Step2DropNoisePreviewProps {
 
 export function Step2DropNoisePreview({ dropNoiseFilters }: Step2DropNoisePreviewProps) {
   const activeDropCount = Object.values(dropNoiseFilters).filter(Boolean).length;
+  const customerAvatar = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=faces';
+  const myAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=faces';
 
   return (
     <div className="relative z-10 flex flex-col h-full justify-between gap-3 animate-in fade-in duration-300">
-      {/* Top Glassy Header Pill */}
+      {/* Top Glassy Header Bar for Customer */}
       <div className="flex items-center justify-between shrink-0 pointer-events-none px-1">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 dark:bg-black/50 backdrop-blur-md border border-white/15 text-white text-xs font-medium shadow-md">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Alexander (Customer)</span>
+        <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/10 dark:bg-black/50 backdrop-blur-md border border-white/15 text-white text-xs font-medium shadow-md">
+          <div className="w-6 h-6 rounded-full overflow-hidden ring-1 ring-white/20 shrink-0 bg-neutral-800">
+            <img
+              src={customerAvatar}
+              alt="Alexander"
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <span className="font-bold truncate max-w-[200px]">Alexander (Customer)</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5 shrink-0" />
         </div>
         <span className="text-[11px] font-mono text-neutral-200 bg-white/10 dark:bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/15">
           {activeDropCount} Filtered
         </span>
       </div>
 
-      {/* Glassy Floating Message Feed: No clipping, smooth padding */}
-      <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 min-h-0 py-2 scrollbar-thin scrollbar-thumb-white/10">
-        {/* 1. Customer Message */}
-        <div className="flex items-end gap-2.5 max-w-[88%]">
-          <div className="w-7 h-7 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shrink-0 shadow-sm">
-            <IconUser className="w-3.5 h-3.5" />
+      {/* Glassy Floating Message Feed: Full height without awkward vertical centering */}
+      <div className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0 py-2 scrollbar-thin scrollbar-thumb-white/10">
+        {/* 1. Inbound Customer Message */}
+        <div className="flex items-end gap-2.5 max-w-[88%] shrink-0">
+          <div className="w-7 h-7 rounded-full overflow-hidden ring-1 ring-white/20 shrink-0 bg-neutral-800 shadow-sm">
+            <img src={customerAvatar} alt="Alexander" className="w-full h-full object-cover" />
           </div>
-          <div className="rounded-2xl rounded-bl-xs px-3.5 py-2.5 bg-white/10 backdrop-blur-md border border-white/15 text-white shadow-lg space-y-1">
+          <div className="rounded-2xl rounded-bl-xs px-3.5 py-2.5 bg-white/10 dark:bg-black/40 backdrop-blur-md border border-white/15 text-white shadow-md">
             <p className="text-xs leading-relaxed">
               Hi Alexander, could you send me the latest quotation and features for the Gradion software?
             </p>
-            <span className="text-[9px] text-white/50 font-mono block text-right">10:30 AM</span>
+            <span className="text-[9px] text-white/50 font-mono mt-1 block text-right">10:30 AM</span>
           </div>
         </div>
 
-        {/* 2. Sales Rep Bubble with EDITED MESSAGE */}
-        <div className="flex items-end justify-end gap-2.5 ml-auto max-w-[88%]">
-          <div className="rounded-2xl rounded-br-xs px-3.5 py-2.5 bg-blue-600/35 backdrop-blur-md border border-blue-400/30 text-white shadow-lg space-y-1.5">
-            <p className="text-xs leading-relaxed">
-              Hello! Absolutely, I will send the PDF proposal and enterprise license breakdown right away.
-            </p>
-            {dropNoiseFilters.edits ? (
-              <div className="p-2 rounded-xl bg-blue-950/60 border border-rose-500/30 text-xs space-y-0.5">
-                <div className="line-through decoration-rose-400/80 decoration-1 text-rose-200/80 text-[11px]">
+        {/* 2. Outbound Message with EDITED AUDIT & REACTION PILL */}
+        <div className="flex items-end justify-end gap-2.5 ml-auto max-w-[90%] shrink-0">
+          <div className="space-y-1.5 flex flex-col items-end">
+            <div className="rounded-2xl rounded-br-xs px-3.5 py-2.5 bg-blue-600/40 backdrop-blur-md border border-blue-400/30 text-white shadow-md space-y-1.5 text-left">
+              <p className="text-xs leading-relaxed">
+                Hello! Absolutely, I will send the PDF proposal and enterprise license breakdown right away.
+              </p>
+
+              {/* NOISE 1: MESSAGE EDITS AUDIT TRAIL */}
+              <div
+                className={`p-2 rounded-xl text-xs font-mono transition-all border ${
+                  dropNoiseFilters.edits
+                    ? 'bg-black/40 border-rose-500/30 text-neutral-300'
+                    : 'bg-black/25 border-white/10 text-neutral-300'
+                }`}
+              >
+                <div
+                  className={
+                    dropNoiseFilters.edits
+                      ? 'line-through decoration-rose-400 decoration-2 text-rose-300/80 text-[11px]'
+                      : 'text-neutral-300 text-[11px]'
+                  }
+                >
                   Original [10:31 AM]: &quot;I will send the draft in 5m&quot;
                 </div>
-                <div className="flex items-center justify-between text-[10px] pt-0.5">
-                  <span className="text-emerald-300 font-semibold flex items-center gap-1">
-                    ✓ Audit: Kept both Original &amp; Revised
+                <div className="flex items-center justify-between text-[10px] pt-1 mt-1 border-t border-white/10">
+                  {dropNoiseFilters.edits ? (
+                    <>
+                      <span className="text-emerald-300 font-semibold flex items-center gap-1">
+                        ✓ Audit: Kept original &amp; revised versions
+                      </span>
+                      <span className="text-rose-400 font-medium">✕ Edit Noise Replaced</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-amber-400">• Unfiltered</span>
+                      <span className="text-neutral-400">Overwritten without audit</span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Timestamp & NOISE 2: REACTION PILL */}
+              <div className="flex items-center justify-between text-[9px] text-blue-200/70 font-mono pt-0.5">
+                <div
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border transition-all ${
+                    dropNoiseFilters.reactions
+                      ? 'bg-rose-950/40 border-rose-500/30 text-rose-300'
+                      : 'bg-white/10 border-white/15 text-neutral-200'
+                  }`}
+                >
+                  <span
+                    className={
+                      dropNoiseFilters.reactions
+                        ? 'line-through decoration-rose-500 decoration-2 opacity-75'
+                        : ''
+                    }
+                  >
+                    👍 1
                   </span>
-                  <span className="text-rose-300/90 font-medium">Replaced</span>
+                  {dropNoiseFilters.reactions ? (
+                    <span className="text-[9px] font-mono text-rose-400">✕ Dropped Reaction</span>
+                  ) : (
+                    <span className="text-[9px] font-mono text-emerald-300">• Sync</span>
+                  )}
                 </div>
+
+                <span>10:32 AM (Edited)</span>
               </div>
-            ) : (
-              <div className="p-2 rounded-xl bg-blue-950/30 border border-blue-400/20 text-xs text-neutral-300 space-y-0.5">
-                <div className="text-[11px]">Original [10:31 AM]: &quot;I will send the draft in 5m&quot;</div>
-                <div className="flex items-center justify-between text-[10px] pt-0.5 text-amber-300">
-                  <span>• Unfiltered</span>
-                  <span className="text-neutral-400">Overwritten</span>
-                </div>
-              </div>
-            )}
-            <span className="text-[9px] text-blue-200/70 font-mono block text-right">10:32 AM (Edited)</span>
+            </div>
           </div>
-          <div className="w-7 h-7 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 text-emerald-300 flex items-center justify-center shrink-0 shadow-sm">
-            <IconUser className="w-3.5 h-3.5" />
+          <div className="w-7 h-7 rounded-full overflow-hidden ring-1 ring-white/20 shrink-0 bg-neutral-800 shadow-sm">
+            <img src={myAvatar} alt="Me" className="w-full h-full object-cover" />
           </div>
         </div>
 
-        {/* 3. REACTIONS ITEM */}
-        <div
-          className={`rounded-xl px-3.5 py-2.5 backdrop-blur-md transition-all space-y-1 shadow-md ${
-            dropNoiseFilters.reactions
-              ? 'border border-rose-500/30 bg-rose-950/20'
-              : 'border border-white/15 bg-white/10'
-          }`}
-        >
-          <div
-            className={`text-xs ${
-              dropNoiseFilters.reactions
-                ? 'line-through decoration-rose-500/70 decoration-1 text-neutral-300'
-                : 'text-neutral-200'
-            }`}
-          >
-            👍 Customer reacted to &quot;Hello! Absolutely...&quot;
+        {/* 3. NOISE 3: STICKER MESSAGE */}
+        <div className="flex items-end gap-2.5 max-w-[85%] shrink-0">
+          <div className="w-7 h-7 rounded-full overflow-hidden ring-1 ring-white/20 shrink-0 bg-neutral-800 shadow-sm">
+            <img src={customerAvatar} alt="Alexander" className="w-full h-full object-cover" />
           </div>
-          <div className="flex items-center justify-between text-[10px] pt-0.5">
-            {dropNoiseFilters.reactions ? (
-              <>
-                <span className="text-rose-300/90 flex items-center gap-1 font-medium">
-                  ✕ Filtered by DropNoise
-                </span>
-                <span className="text-neutral-400 font-mono">Unsynced</span>
-              </>
-            ) : (
-              <>
-                <span className="text-emerald-400 flex items-center gap-1.5 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-                  Synced to CRM
-                </span>
-                <span className="text-neutral-300 font-mono">Sync</span>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* 4. STICKERS ITEM */}
-        <div
-          className={`rounded-xl px-3.5 py-2.5 backdrop-blur-md transition-all space-y-1 shadow-md ${
-            dropNoiseFilters.stickers
-              ? 'border border-rose-500/30 bg-rose-950/20'
-              : 'border border-white/15 bg-white/10'
-          }`}
-        >
           <div
-            className={`text-xs flex items-center gap-2 ${
+            className={`p-3 rounded-2xl rounded-bl-xs backdrop-blur-md border transition-all shadow-md space-y-1.5 ${
               dropNoiseFilters.stickers
-                ? 'line-through decoration-rose-500/70 decoration-1 text-neutral-300'
-                : 'text-neutral-200'
+                ? 'bg-rose-950/25 border-rose-500/30 text-white'
+                : 'bg-white/10 dark:bg-black/40 border border-white/15 text-white'
             }`}
           >
-            <span className="text-base">🐱</span>
-            <span>[Sticker: Animated Thumbs Up Cat]</span>
-          </div>
-          <div className="flex items-center justify-between text-[10px] pt-0.5">
-            {dropNoiseFilters.stickers ? (
-              <>
-                <span className="text-rose-300/90 flex items-center gap-1 font-medium">
-                  ✕ Filtered by DropNoise
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">🐱</span>
+              <div>
+                <span
+                  className={`text-xs font-semibold block ${
+                    dropNoiseFilters.stickers
+                      ? 'line-through decoration-rose-500 decoration-2 text-neutral-400'
+                      : 'text-white'
+                  }`}
+                >
+                  [Sticker: Animated Thumbs Up Cat]
                 </span>
-                <span className="text-neutral-400 font-mono">Unsynced</span>
-              </>
-            ) : (
-              <>
-                <span className="text-emerald-400 flex items-center gap-1.5 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-                  Synced to CRM
-                </span>
-                <span className="text-neutral-300 font-mono">Sync</span>
-              </>
-            )}
+                <span className="text-[10px] text-neutral-400">Non-text cartoon sticker</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between text-[10px] font-mono pt-1 border-t border-white/10">
+              {dropNoiseFilters.stickers ? (
+                <>
+                  <span className="text-rose-400 font-semibold">✕ Removed by DropNoise</span>
+                  <span className="text-neutral-400">Unsynced</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-emerald-400 font-semibold">• Synced to CRM</span>
+                  <span className="text-neutral-300">Sync</span>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* 5. STORIES & STATUS ITEM */}
-        <div
-          className={`rounded-xl px-3.5 py-2.5 backdrop-blur-md transition-all space-y-1 shadow-md ${
-            dropNoiseFilters.stories
-              ? 'border border-rose-500/30 bg-rose-950/20'
-              : 'border border-white/15 bg-white/10'
-          }`}
-        >
+        {/* 4. NOISE 4: STORY REPLY NOTIFICATION */}
+        <div className="flex items-end gap-2.5 max-w-[85%] shrink-0">
+          <div className="w-7 h-7 rounded-full overflow-hidden ring-1 ring-white/20 shrink-0 bg-neutral-800 shadow-sm">
+            <img src={customerAvatar} alt="Alexander" className="w-full h-full object-cover" />
+          </div>
           <div
-            className={`text-xs flex items-center gap-2 ${
+            className={`p-3 rounded-2xl rounded-bl-xs backdrop-blur-md border transition-all shadow-md space-y-1.5 ${
               dropNoiseFilters.stories
-                ? 'line-through decoration-rose-500/70 decoration-1 text-neutral-300'
-                : 'text-neutral-200'
+                ? 'bg-rose-950/25 border-rose-500/30 text-white'
+                : 'bg-white/10 dark:bg-black/40 border border-white/15 text-white'
             }`}
           >
-            <span className="text-base">📷</span>
-            <span>Replied to your Story: &quot;Q4 Enterprise Launch 🚀&quot;</span>
-          </div>
-          <div className="flex items-center justify-between text-[10px] pt-0.5">
-            {dropNoiseFilters.stories ? (
-              <>
-                <span className="text-rose-300/90 flex items-center gap-1 font-medium">
-                  ✕ Filtered by DropNoise
-                </span>
-                <span className="text-neutral-400 font-mono">Unsynced</span>
-              </>
-            ) : (
-              <>
-                <span className="text-emerald-400 flex items-center gap-1.5 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-                  Synced to CRM
-                </span>
-                <span className="text-neutral-300 font-mono">Sync</span>
-              </>
-            )}
+            <div className="p-2 rounded-xl bg-black/30 border border-white/10 space-y-0.5">
+              <div className="text-[10px] text-neutral-400 flex items-center gap-1.5">
+                <span>📷 Replied to your Story:</span>
+                <span className="font-semibold text-white">&quot;Q4 Enterprise Launch 🚀&quot;</span>
+              </div>
+              <p className="text-xs text-neutral-200">
+                &quot;Looks great! Let us discuss pricing on the call tomorrow.&quot;
+              </p>
+            </div>
+            <div className="flex items-center justify-between text-[10px] font-mono pt-1">
+              {dropNoiseFilters.stories ? (
+                <>
+                  <span className="line-through decoration-rose-500 decoration-2 text-rose-400 font-semibold">
+                    ✕ Story Reply Noise Dropped
+                  </span>
+                  <span className="text-neutral-400">Unsynced</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-emerald-400 font-semibold">• Synced to CRM</span>
+                  <span className="text-neutral-300">Sync</span>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* 6. Customer Message */}
-        <div className="flex items-end gap-2.5 max-w-[88%]">
-          <div className="w-7 h-7 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shrink-0 shadow-sm">
-            <IconUser className="w-3.5 h-3.5" />
+        {/* 5. Inbound Customer Confirmation */}
+        <div className="flex items-end gap-2.5 max-w-[88%] shrink-0">
+          <div className="w-7 h-7 rounded-full overflow-hidden ring-1 ring-white/20 shrink-0 bg-neutral-800 shadow-sm">
+            <img src={customerAvatar} alt="Alexander" className="w-full h-full object-cover" />
           </div>
-          <div className="rounded-2xl rounded-bl-xs px-3.5 py-2.5 bg-white/10 backdrop-blur-md border border-white/15 text-white shadow-lg space-y-1">
+          <div className="rounded-2xl rounded-bl-xs px-3.5 py-2.5 bg-white/10 dark:bg-black/40 backdrop-blur-md border border-white/15 text-white shadow-md">
             <p className="text-xs leading-relaxed">
               Thank you! Everything looks solid. Let&apos;s arrange a quick demo call tomorrow at 10 AM.
             </p>
-            <span className="text-[9px] text-white/50 font-mono block text-right">10:33 AM</span>
+            <span className="text-[9px] text-white/50 font-mono mt-1 block text-right">10:33 AM</span>
           </div>
         </div>
 
-        {/* 7. Sales Rep Closing */}
-        <div className="flex items-end justify-end gap-2.5 ml-auto max-w-[88%]">
-          <div className="rounded-2xl rounded-br-xs px-3.5 py-2.5 bg-blue-600/35 backdrop-blur-md border border-blue-400/30 text-white shadow-lg space-y-1">
+        {/* 6. Outbound Sales Rep Closing */}
+        <div className="flex items-end justify-end gap-2.5 ml-auto max-w-[88%] shrink-0">
+          <div className="rounded-2xl rounded-br-xs px-3.5 py-2.5 bg-blue-600/40 backdrop-blur-md border border-blue-400/30 text-white shadow-md">
             <p className="text-xs leading-relaxed">
               Perfect! I have reserved 10:00 AM on Google Meet. See you tomorrow!
             </p>
-            <span className="text-[9px] text-blue-200/70 font-mono block text-right">10:35 AM</span>
+            <span className="text-[9px] text-blue-200/70 font-mono mt-1 block text-right">10:35 AM</span>
           </div>
-          <div className="w-7 h-7 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 text-emerald-300 flex items-center justify-center shrink-0 shadow-sm">
-            <IconUser className="w-3.5 h-3.5" />
+          <div className="w-7 h-7 rounded-full overflow-hidden ring-1 ring-white/20 shrink-0 bg-neutral-800 shadow-sm">
+            <img src={myAvatar} alt="Me" className="w-full h-full object-cover" />
           </div>
         </div>
+      </div>
+
+      {/* Bottom glassy status line aligned with left bottom action bar */}
+      <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-neutral-400 shrink-0 px-1">
+        <div className="flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span>Real-time transcript preview</span>
+        </div>
+        <span className="font-mono text-[10px] text-neutral-400">
+          {activeDropCount} noise rules active
+        </span>
       </div>
     </div>
   );
