@@ -1,0 +1,56 @@
+{
+  "name": "newchat-bridge",
+  "productName": "NewChat Bridge",
+  "version": "0.1.0",
+  "description": "High-performance Desktop Chat Bridge built with Electron, React 19, HeroUI, Tailwind v4 and Kysely",
+  "type": "module",
+  "main": "dist/main/index.cjs",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:ui": "vite",
+    "build:ui": "vite build",
+    "build:main": "node scripts/build.mjs",
+    "build": "npm run build:ui && npm run build:main",
+    "typecheck": "tsc --noEmit",
+    "package": "npm run build && electron-builder",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.4.3",
+    "@fastify/static": "^10.1.11",
+    "@heroui/react": "^3.2.7",
+    "@heroui/styles": "^3.2.7",
+    "@internationalized/date": "^3.12.4",
+    "@whiskeysockets/baileys": "7.0.0-rc14",
+    "better-sqlite3-multiple-ciphers": "^13.1.1",
+    "commander": "^15.1.0",
+    "fastify": "^5.12.8",
+    "kysely": "^0.29.9",
+    "lucide-react": "^1.72.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.3.1",
+    "react-aria": "^3.53.1",
+    "react-aria-components": "^1.22.1",
+    "react-dom": "^19.3.1",
+    "zca-js": "^2.2.0",
+    "zustand": "^5.1.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@tailwindcss/vite": "^4.3.5",
+    "@types/node": "^26.6.6",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "electron": "^45.3.2",
+    "electron-builder": "^26.18.0",
+    "esbuild": "^0.28.2",
+    "tailwindcss": "^4.3.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}
+
