@@ -1037,34 +1037,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     );
                   })}
                 </div>
-
-                {/* Clear Explanations for the 4 core categories */}
-                <div className="space-y-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
-                  <div className="p-2.5 rounded-xl bg-neutral-50/80 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/80 text-xs">
-                    <div className="font-semibold text-neutral-900 dark:text-white flex items-center gap-1.5">
-                      <span>👍 Reactions:</span>
-                      <span className="font-normal text-neutral-500 dark:text-neutral-400">Lọc bỏ cảm xúc (like, thả tim, haha) của người khác lên tin nhắn.</span>
-                    </div>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-neutral-50/80 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/80 text-xs">
-                    <div className="font-semibold text-neutral-900 dark:text-white flex items-center gap-1.5">
-                      <span>✏️ Message Edits:</span>
-                      <span className="font-normal text-neutral-500 dark:text-neutral-400">Giữ cả bản tin nhắn gốc & bản sửa để đối chiếu lịch sử CRM.</span>
-                    </div>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-neutral-50/80 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/80 text-xs">
-                    <div className="font-semibold text-neutral-900 dark:text-white flex items-center gap-1.5">
-                      <span>🐱 Stickers:</span>
-                      <span className="font-normal text-neutral-500 dark:text-neutral-400">Lọc bỏ nhãn dán hoạt hình không chứa văn bản bán hàng.</span>
-                    </div>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-neutral-50/80 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800/80 text-xs">
-                    <div className="font-semibold text-neutral-900 dark:text-white flex items-center gap-1.5">
-                      <span>📷 Stories & Status:</span>
-                      <span className="font-normal text-neutral-500 dark:text-neutral-400">Lọc bỏ tin tức nhật ký Zalo/WhatsApp Story và phản hồi story.</span>
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
 
@@ -1564,7 +1536,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           {step === 1 && null}
 
           {/* ================================================================= */}
-          {/* STEP 2: GLASSY CHAT BUBBLES DEMONSTRATING REACTIONS, EDITS, STICKERS, STORIES */}
+          {/* STEP 2: DROPNOISE LIVE DEMO PREVIEW (Glassy floating chat)         */}
+          {/* Strikethrough on active noise filters + realtime preview           */}
           {/* ================================================================= */}
           {step === 2 && (
             <div className="relative z-10 flex flex-col h-full justify-between gap-3 animate-in fade-in duration-300">
@@ -1572,85 +1545,201 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               <div className="flex items-center justify-between shrink-0 pointer-events-none">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 dark:bg-black/40 backdrop-blur-md border border-white/15 text-white text-xs font-medium shadow-md">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>DropNoise Live Filter Preview</span>
+                  <span>Alexander (Customer)</span>
                 </div>
                 <span className="text-[11px] font-mono text-neutral-200 bg-white/10 dark:bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/15">
-                  {activeDropCount} Filters Active
+                  {activeDropCount} Filtered
                 </span>
               </div>
 
               {/* Glassy Floating Message Feed */}
-              <div className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0 flex flex-col justify-center py-2 scrollbar-none [&::-webkit-scrollbar]:hidden">
-                {/* 1. Customer Bubble with REACTION */}
+              <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 min-h-0 flex flex-col justify-center py-1 scrollbar-none [&::-webkit-scrollbar]:hidden">
+                {/* 1. Customer Message */}
                 <div className="flex items-end gap-2.5 max-w-[90%]">
                   <div className="w-7 h-7 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shrink-0 shadow-sm">
                     <IconUser className="w-3.5 h-3.5" />
                   </div>
-                  <div className="rounded-2xl rounded-bl-xs px-3.5 py-2.5 bg-white/10 backdrop-blur-md border border-white/15 text-white shadow-lg space-y-1">
+                  <div className="rounded-2xl rounded-bl-xs px-3.5 py-2 bg-white/10 backdrop-blur-md border border-white/15 text-white shadow-lg space-y-1">
                     <p className="text-xs leading-relaxed">
                       Hi Alexander, could you send me the latest quotation and features for the Gradion software?
                     </p>
-                    <div className="flex items-center justify-between pt-0.5">
-                      <span className="text-[9px] text-white/50 font-mono">10:30 AM</span>
-                      <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full ${
-                        dropNoiseFilters.reactions
-                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                          : 'bg-white/15 text-neutral-200'
-                      }`}>
-                        <span>👍 1</span>
-                        {dropNoiseFilters.reactions && <span className="text-[9px] font-mono opacity-80">(Reaction filtered)</span>}
-                      </span>
-                    </div>
+                    <span className="text-[9px] text-white/50 font-mono block text-right">10:30 AM</span>
                   </div>
                 </div>
 
-                {/* 2. Sales Rep Bubble with EDITED MESSAGE (Kept original + revised) */}
+                {/* 2. Sales Rep Bubble with EDITED MESSAGE */}
                 <div className="flex items-end justify-end gap-2.5 ml-auto max-w-[90%]">
-                  <div className="rounded-2xl rounded-br-xs px-3.5 py-2.5 bg-blue-600/35 backdrop-blur-md border border-blue-400/30 text-white shadow-lg space-y-1">
+                  <div className="rounded-2xl rounded-br-xs px-3.5 py-2.5 bg-blue-600/35 backdrop-blur-md border border-blue-400/30 text-white shadow-lg space-y-1.5">
                     <p className="text-xs leading-relaxed">
                       Hello! Absolutely, I will send the PDF proposal and enterprise license breakdown right away.
                     </p>
-                    {dropNoiseFilters.edits && (
-                      <div className="p-1.5 rounded-lg bg-blue-950/40 border border-blue-400/20 text-[10px] text-blue-200/90 font-mono space-y-0.5">
-                        <div className="line-through text-blue-300/60">Original [10:31 AM]: &quot;I will send the draft in 5m&quot;</div>
-                        <div className="text-emerald-300 font-semibold">✓ Audit: Kept both Original &amp; Revised version</div>
+                    {dropNoiseFilters.edits ? (
+                      <div className="p-2 rounded-xl bg-blue-950/50 border border-rose-500/35 text-xs font-mono space-y-1">
+                        <div className="line-through decoration-rose-500 decoration-2 text-rose-300/80">
+                          Original [10:31 AM]: &quot;I will send the draft in 5m&quot;
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] pt-0.5">
+                          <span className="text-emerald-300 font-semibold flex items-center gap-1">
+                            ✓ Audit: Kept both Original &amp; Revised version
+                          </span>
+                          <span className="text-rose-400 font-semibold">✕ Noise Replaced</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-2 rounded-xl bg-blue-950/25 border border-blue-400/20 text-xs font-mono text-neutral-300 space-y-1">
+                        <div>Original [10:31 AM]: &quot;I will send the draft in 5m&quot;</div>
+                        <div className="flex items-center justify-between text-[10px] pt-0.5">
+                          <span className="text-amber-400 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+                            Unfiltered
+                          </span>
+                          <span className="text-neutral-400">Overwritten without audit</span>
+                        </div>
                       </div>
                     )}
-                    <span className="text-[9px] text-blue-200/70 font-mono mt-1 block text-right">10:32 AM (Edited)</span>
+                    <span className="text-[9px] text-blue-200/70 font-mono block text-right">10:32 AM (Edited)</span>
                   </div>
                   <div className="w-7 h-7 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 text-emerald-300 flex items-center justify-center shrink-0 shadow-sm">
                     <IconUser className="w-3.5 h-3.5" />
                   </div>
                 </div>
 
-                {/* 3. STICKER Bubble (Filtered when stickers is active) */}
-                <div className="flex items-end gap-2.5 max-w-[90%]">
-                  <div className="w-7 h-7 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shrink-0 shadow-sm">
-                    <IconUser className="w-3.5 h-3.5" />
+                {/* 3. REACTIONS ITEM */}
+                <div
+                  className={`rounded-xl px-3.5 py-2 backdrop-blur-md transition-all space-y-1 shadow-md ${
+                    dropNoiseFilters.reactions
+                      ? 'border border-rose-500/35 bg-rose-950/30'
+                      : 'border border-white/15 bg-white/10'
+                  }`}
+                >
+                  <div
+                    className={`text-xs font-mono ${
+                      dropNoiseFilters.reactions
+                        ? 'line-through decoration-rose-500 decoration-2 text-neutral-400'
+                        : 'text-neutral-200'
+                    }`}
+                  >
+                    👍 Customer reacted to &quot;Hello! Absolutely...&quot;
                   </div>
-                  <div className="rounded-2xl rounded-bl-xs px-3.5 py-2 bg-white/10 backdrop-blur-md border border-white/15 text-white shadow-lg flex items-center gap-2">
-                    <span className="text-base">🐱</span>
-                    <span className="text-xs font-medium">[Sticker: Thumbs Up Cat]</span>
-                    {dropNoiseFilters.stickers && (
-                      <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 ml-auto">
-                        Sticker filtered
-                      </span>
+                  <div className="flex items-center justify-between text-[10px] font-mono pt-0.5">
+                    {dropNoiseFilters.reactions ? (
+                      <>
+                        <span className="text-rose-400 flex items-center gap-1 font-semibold">
+                          ✕ Removed by DropNoise
+                        </span>
+                        <span className="text-neutral-400">Unsynced</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-amber-400 flex items-center gap-1.5 font-semibold">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+                          Unfiltered
+                        </span>
+                        <span className="text-neutral-300">Sync</span>
+                      </>
                     )}
                   </div>
                 </div>
 
-                {/* 4. STORY NOTIFICATION (Filtered when stories is active) */}
+                {/* 4. STICKERS ITEM */}
+                <div
+                  className={`rounded-xl px-3.5 py-2 backdrop-blur-md transition-all space-y-1 shadow-md ${
+                    dropNoiseFilters.stickers
+                      ? 'border border-rose-500/35 bg-rose-950/30'
+                      : 'border border-white/15 bg-white/10'
+                  }`}
+                >
+                  <div
+                    className={`text-xs font-mono flex items-center gap-2 ${
+                      dropNoiseFilters.stickers
+                        ? 'line-through decoration-rose-500 decoration-2 text-neutral-400'
+                        : 'text-neutral-200'
+                    }`}
+                  >
+                    <span className="text-base">🐱</span>
+                    <span>[Sticker: Animated Thumbs Up Cat]</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] font-mono pt-0.5">
+                    {dropNoiseFilters.stickers ? (
+                      <>
+                        <span className="text-rose-400 flex items-center gap-1 font-semibold">
+                          ✕ Removed by DropNoise
+                        </span>
+                        <span className="text-neutral-400">Unsynced</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-amber-400 flex items-center gap-1.5 font-semibold">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+                          Unfiltered
+                        </span>
+                        <span className="text-neutral-300">Sync</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* 5. STORIES & STATUS ITEM */}
+                <div
+                  className={`rounded-xl px-3.5 py-2 backdrop-blur-md transition-all space-y-1 shadow-md ${
+                    dropNoiseFilters.stories
+                      ? 'border border-rose-500/35 bg-rose-950/30'
+                      : 'border border-white/15 bg-white/10'
+                  }`}
+                >
+                  <div
+                    className={`text-xs font-mono flex items-center gap-2 ${
+                      dropNoiseFilters.stories
+                        ? 'line-through decoration-rose-500 decoration-2 text-neutral-400'
+                        : 'text-neutral-200'
+                    }`}
+                  >
+                    <span className="text-base">📷</span>
+                    <span>Replied to your Story: &quot;Q4 Enterprise Launch 🚀&quot;</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] font-mono pt-0.5">
+                    {dropNoiseFilters.stories ? (
+                      <>
+                        <span className="text-rose-400 flex items-center gap-1 font-semibold">
+                          ✕ Removed by DropNoise
+                        </span>
+                        <span className="text-neutral-400">Unsynced</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-amber-400 flex items-center gap-1.5 font-semibold">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+                          Unfiltered
+                        </span>
+                        <span className="text-neutral-300">Sync</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* 6. Customer Message */}
                 <div className="flex items-end gap-2.5 max-w-[90%]">
                   <div className="w-7 h-7 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shrink-0 shadow-sm">
                     <IconUser className="w-3.5 h-3.5" />
                   </div>
-                  <div className="rounded-2xl rounded-bl-xs px-3.5 py-2 bg-white/10 backdrop-blur-md border border-white/15 text-white shadow-lg flex items-center gap-2">
-                    <span className="text-xs">📷 Replied to your Story: &quot;Q4 Enterprise Launch 🚀&quot;</span>
-                    {dropNoiseFilters.stories && (
-                      <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 ml-auto">
-                        Story filtered
-                      </span>
-                    )}
+                  <div className="rounded-2xl rounded-bl-xs px-3.5 py-2 bg-white/10 backdrop-blur-md border border-white/15 text-white shadow-lg space-y-1">
+                    <p className="text-xs leading-relaxed">
+                      Thank you! Everything looks solid. Let&apos;s arrange a quick demo call tomorrow at 10 AM.
+                    </p>
+                    <span className="text-[9px] text-white/50 font-mono block text-right">10:33 AM</span>
+                  </div>
+                </div>
+
+                {/* 7. Sales Rep Closing */}
+                <div className="flex items-end justify-end gap-2.5 ml-auto max-w-[90%]">
+                  <div className="rounded-2xl rounded-br-xs px-3.5 py-2 bg-blue-600/35 backdrop-blur-md border border-blue-400/30 text-white shadow-lg space-y-1">
+                    <p className="text-xs leading-relaxed">
+                      Perfect! I have reserved 10:00 AM on Google Meet. See you tomorrow!
+                    </p>
+                    <span className="text-[9px] text-blue-200/70 font-mono block text-right">10:35 AM</span>
+                  </div>
+                  <div className="w-7 h-7 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 text-emerald-300 flex items-center justify-center shrink-0 shadow-sm">
+                    <IconUser className="w-3.5 h-3.5" />
                   </div>
                 </div>
               </div>
