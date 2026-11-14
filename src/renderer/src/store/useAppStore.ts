@@ -5,6 +5,7 @@ export type SettingsTab =
   | 'accounts'
   | 'chats'
   | 'delivery'
+  | 'sheets'
   | 'history'
   | 'blocked'
   | 'noise'

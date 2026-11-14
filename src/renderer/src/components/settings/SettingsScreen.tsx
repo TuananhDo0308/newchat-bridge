@@ -13,6 +13,7 @@ import {
 } from '../../store/useAppStore.js';
 import { useChatBridgeStore } from '../../store/useChatBridgeStore.js';
 import { formatChatTime } from '../../utils/formatters.js';
+import { GoogleSheetsStudio } from './sheets/GoogleSheetsStudio.js';
 
 // SVG Icons for Navigation & Controls
 function IconSparkles(props: React.SVGProps<SVGSVGElement>) {
@@ -210,6 +211,15 @@ const SETTINGS_SECTIONS: SectionItem[] = [
     subtitleVi: 'Đích nhận các tin nhắn đã chọn (Margince & Sheets)',
     icon: IconSend,
     badge: () => 'Active Targets',
+  },
+  {
+    id: 'sheets',
+    title: 'Google Sheets Studio',
+    titleVi: 'Định dạng Google Sheets',
+    subtitle: 'Drag & drop column layout, tab strategy & live table preview',
+    subtitleVi: 'Kéo thả chọn cột, bố cục trang tính và xem trước bảng tính trực tiếp',
+    icon: IconGoogleSheets,
+    badge: () => 'Drag & Drop Table',
   },
   {
     id: 'history',
@@ -1104,6 +1114,22 @@ export function SettingsScreen() {
                         </span>
                       )}
                     </div>
+
+                    <div className="pt-2 border-t border-neutral-200/50 dark:border-neutral-800/60 flex items-center justify-between">
+                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                        {isVi
+                          ? 'Tùy chỉnh định dạng bảng tính, kéo thả sắp xếp cột và cấu hình chia tab.'
+                          : 'Customize spreadsheet format, drag-and-drop table columns, and configure tab rules.'}
+                      </p>
+                      <Button
+                        size="sm"
+                        className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-300/80 dark:border-emerald-800 transition cursor-pointer flex items-center gap-1.5 shrink-0"
+                        onPress={() => setSettingsTab('sheets')}
+                      >
+                        <span>{isVi ? 'Studio kéo thả cột (Pro UI)' : 'Drag & Drop Studio (Pro UI)'}</span>
+                        <span>→</span>
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1150,6 +1176,13 @@ export function SettingsScreen() {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* =============================================================== */}
+          {/* GOOGLE SHEETS STUDIO (DRAG & DROP WORKBENCH)                    */}
+          {/* =============================================================== */}
+          {settingsTab === 'sheets' && (
+            <GoogleSheetsStudio isVi={isVi} />
           )}
 
           {/* =============================================================== */}
@@ -1727,3 +1760,4 @@ export function SettingsScreen() {
     </div>
   );
 }
+
