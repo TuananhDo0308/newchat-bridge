@@ -37,105 +37,136 @@ export function Step1AccountConnect({
           }`}
         >
           <div
-            className={`w-full h-full relative transition-transform duration-700 transform-style-3d ${
+            className={`w-full h-full duration-700 transform-style-3d transition-transform ${
               activeFlippedChannel === 'zalo' ? 'rotate-y-180' : ''
             }`}
           >
-            {/* FRONT FACE: Connected Profile or Connect Prompt */}
+            {/* FRONT FACE: Connected Profile OR Initial Pair Prompt */}
             <div
-              className={`absolute inset-0 w-full h-full backface-hidden rounded-2xl p-4 flex flex-col justify-between border select-none transition-all ${
+              className={`absolute inset-0 backface-hidden rounded-2xl p-4 border flex flex-col justify-between transition-all group shadow-xs ${
                 zaloProfile
-                  ? 'bg-blue-50/70 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/50 shadow-sm'
-                  : 'bg-neutral-50/60 dark:bg-neutral-900/40 border-neutral-200/90 dark:border-neutral-800 hover:border-blue-500/50 dark:hover:border-blue-500/50 hover:shadow-md'
+                  ? 'bg-blue-50/40 dark:bg-blue-950/20 border-blue-500/80 dark:border-blue-500/80 ring-2 ring-blue-500/20'
+                  : 'border-neutral-200/90 dark:border-neutral-800 bg-neutral-50/70 dark:bg-[#161618] hover:border-blue-500/80 hover:bg-blue-50/20 dark:hover:bg-blue-950/20'
               }`}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 flex items-center justify-center p-1.5 border border-blue-500/20">
-                    <img src={zaloLogo} alt="Zalo" className="w-7 h-7 object-contain" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm text-neutral-900 dark:text-white">Zalo Personal</h3>
-                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400">Vietnam Messenger</p>
-                  </div>
-                </div>
-
-                {zaloProfile ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                    <IconCheck className="w-3 h-3 stroke-[3]" />
-                    <span>Linked</span>
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500 px-2 py-0.5 rounded-full bg-neutral-200/60 dark:bg-neutral-800">
-                    Not connected
-                  </span>
-                )}
-              </div>
-
               {zaloProfile ? (
-                <div className="p-3 rounded-xl bg-white/90 dark:bg-neutral-900/80 border border-blue-200/60 dark:border-blue-900/40 flex items-center gap-3 shadow-xs">
-                  <img
-                    src={zaloProfile.avatar}
-                    alt={zaloProfile.name}
-                    className="w-11 h-11 rounded-full object-cover ring-2 ring-blue-500/30"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="font-bold text-sm text-neutral-900 dark:text-white truncate">
-                      {zaloProfile.name}
+                <div className="flex-1 flex flex-col justify-between animate-in zoom-in-95 duration-300">
+                  <div className="flex items-start justify-between">
+                    <div className="relative">
+                      <img
+                        src={zaloProfile.avatar}
+                        alt={zaloProfile.name}
+                        className="w-16 h-16 rounded-2xl object-cover ring-2 ring-blue-500 shadow-md"
+                      />
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white p-0.5 shadow-sm">
+                        <img src={zaloLogo} alt="Zalo" className="w-full h-full object-cover rounded-full" />
+                      </div>
                     </div>
-                    <div className="text-xs text-neutral-500 dark:text-neutral-400 font-mono">
-                      {zaloProfile.phone}
-                    </div>
-                    <span className="inline-block mt-0.5 text-[10px] text-blue-600 dark:text-blue-400 font-medium">
-                      ✓ Active session
+                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5 shadow-2xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>Connected</span>
                     </span>
+                  </div>
+
+                  <div className="space-y-1 pt-3">
+                    <h4 className="font-bold text-base text-neutral-900 dark:text-white">
+                      {zaloProfile.name}
+                    </h4>
+                    <p className="text-xs font-mono font-medium text-blue-600 dark:text-blue-400">
+                      {zaloProfile.phone}
+                    </p>
+                  </div>
+
+                  <div className="pt-2 text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span>Ready to sync</span>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onFlipCard('zalo');
+                      }}
+                      className="text-[10px] font-semibold text-rose-500 hover:text-rose-600 underline cursor-pointer"
+                    >
+                      Re-scan
+                    </button>
                   </div>
                 </div>
               ) : (
-                <div className="my-auto text-center py-4 space-y-1">
-                  <div className="w-12 h-12 rounded-2xl bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 flex items-center justify-center mx-auto mb-2 border border-neutral-200 dark:border-neutral-700">
-                    <IconQrCode className="w-6 h-6" />
+                <>
+                  <div className="flex items-start justify-between">
+                    <div className="w-12 h-12 rounded-xl bg-white shadow-xs p-1 ring-1 ring-neutral-200 dark:ring-neutral-700 flex items-center justify-center overflow-hidden">
+                      <img src={zaloLogo} alt="Zalo" className="w-full h-full object-cover rounded-lg" />
+                    </div>
                   </div>
-                  <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                    Click to reveal QR Code
-                  </p>
-                  <p className="text-[11px] text-neutral-400 dark:text-neutral-500">
-                    Scan with Zalo mobile app
-                  </p>
-                </div>
-              )}
 
-              <div className="pt-2 border-t border-neutral-200/60 dark:border-neutral-800 text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center justify-between">
-                <span>Direct OAuth Core</span>
-                <span className="text-blue-600 dark:text-blue-400 font-medium">
-                  {zaloProfile ? 'Re-scan' : 'Tap to scan →'}
-                </span>
-              </div>
+                  <div>
+                    <h4 className="font-bold text-base text-neutral-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
+                      Zalo Account
+                    </h4>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 leading-relaxed">
+                      Pair your personal sales account or official OA to start syncing.
+                    </p>
+                  </div>
+
+                  <div className="w-full py-2.5 px-3 rounded-xl bg-blue-600 group-hover:bg-blue-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-xs transition">
+                    <IconQrCode className="w-3.5 h-3.5" />
+                    <span>Click to Pair Zalo</span>
+                  </div>
+                </>
+              )}
             </div>
 
-            {/* BACK FACE: Dedicated QR Code with Countdown */}
-            <div className="absolute inset-0 w-full h-full rotate-y-180 backface-hidden rounded-2xl p-4 bg-white dark:bg-[#151518] border border-blue-500/40 shadow-xl flex flex-col justify-between items-center text-center">
-              <div className="w-full flex items-center justify-between">
-                <span className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
-                  <img src={zaloLogo} alt="Zalo" className="w-3.5 h-3.5 object-contain" />
-                  <span>Scan Zalo QR</span>
-                </span>
-                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                  {qrCountdown}s
-                </span>
+            {/* BACK FACE: Dedicated QR Code Pairing View */}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="absolute inset-0 backface-hidden rotate-y-180 rounded-2xl p-3 border border-blue-200 dark:border-blue-800/80 bg-white dark:bg-[#18181b] flex flex-col items-center justify-between shadow-md cursor-default"
+            >
+              <div className="w-full flex items-center justify-between px-1 text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">
+                <div className="flex items-center gap-1.5">
+                  <img src={zaloLogo} alt="Zalo" className="w-3.5 h-3.5 rounded-full" />
+                  <span>Zalo QR Code</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[10px] text-neutral-400">
+                    {qrCountdown > 0 ? `00:${qrCountdown < 10 ? `0${qrCountdown}` : qrCountdown}` : 'Expired'}
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onFlipCard('zalo');
+                    }}
+                    className="text-[10px] text-neutral-400 hover:text-neutral-700 dark:hover:text-white cursor-pointer px-1 py-0.5 rounded-sm hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                    title="Cancel"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
 
-              <div className="relative p-2.5 bg-white rounded-xl shadow-inner border border-neutral-200 my-1">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=chatbridge-zalo-auth-${qrSeed}`}
-                  alt="Zalo QR"
-                  className="w-28 h-28 object-contain"
-                />
+              {/* Crisp SVG QR Code Grid */}
+              <div className="relative w-36 h-36 rounded-xl bg-neutral-900 dark:bg-white p-2 flex flex-wrap gap-1 shadow-inner overflow-hidden">
+                {Array.from({ length: 25 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-[23px] h-[23px] rounded-xs ${
+                      (i % 2 === 0 && (i + qrSeed) % 3 !== 0) || i === 0 || i === 4 || i === 20
+                        ? 'bg-white dark:bg-neutral-900'
+                        : 'bg-transparent'
+                    }`}
+                  />
+                ))}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-8 h-8 rounded-lg bg-white p-0.5 ring-2 ring-neutral-900 dark:ring-white shadow-md flex items-center justify-center">
+                    <img src={zaloLogo} alt="Zalo" className="w-full h-full object-cover rounded-md" />
+                  </div>
+                </div>
               </div>
 
+              {/* Back Actions: Refresh + Simulate Scan */}
               <div className="w-full flex items-center gap-1.5 pt-1">
                 <button
-                  type="button"
                   onClick={onRegenerateQR}
                   className="p-2 rounded-xl text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-[10px] font-medium transition cursor-pointer"
                   title="Regenerate code"
@@ -163,105 +194,136 @@ export function Step1AccountConnect({
           }`}
         >
           <div
-            className={`w-full h-full relative transition-transform duration-700 transform-style-3d ${
+            className={`w-full h-full duration-700 transform-style-3d transition-transform ${
               activeFlippedChannel === 'whatsapp' ? 'rotate-y-180' : ''
             }`}
           >
-            {/* FRONT FACE: WhatsApp Profile or Connect Prompt */}
+            {/* FRONT FACE: Connected Profile OR Initial Pair Prompt */}
             <div
-              className={`absolute inset-0 w-full h-full backface-hidden rounded-2xl p-4 flex flex-col justify-between border select-none transition-all ${
+              className={`absolute inset-0 backface-hidden rounded-2xl p-4 border flex flex-col justify-between transition-all group shadow-xs ${
                 whatsAppProfile
-                  ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/50 shadow-sm'
-                  : 'bg-neutral-50/60 dark:bg-neutral-900/40 border-neutral-200/90 dark:border-neutral-800 hover:border-emerald-500/50 dark:hover:border-emerald-500/50 hover:shadow-md'
+                  ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-500/80 dark:border-emerald-500/80 ring-2 ring-emerald-500/20'
+                  : 'border-neutral-200/90 dark:border-neutral-800 bg-neutral-50/70 dark:bg-[#161618] hover:border-emerald-500/80 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/20'
               }`}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center p-1.5 border border-emerald-500/20">
-                    <img src={whatsappLogo} alt="WhatsApp" className="w-7 h-7 object-contain" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm text-neutral-900 dark:text-white">WhatsApp Business</h3>
-                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400">Global Customer Base</p>
-                  </div>
-                </div>
-
-                {whatsAppProfile ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                    <IconCheck className="w-3 h-3 stroke-[3]" />
-                    <span>Linked</span>
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500 px-2 py-0.5 rounded-full bg-neutral-200/60 dark:bg-neutral-800">
-                    Not connected
-                  </span>
-                )}
-              </div>
-
               {whatsAppProfile ? (
-                <div className="p-3 rounded-xl bg-white/90 dark:bg-neutral-900/80 border border-emerald-200/60 dark:border-emerald-900/40 flex items-center gap-3 shadow-xs">
-                  <img
-                    src={whatsAppProfile.avatar}
-                    alt={whatsAppProfile.name}
-                    className="w-11 h-11 rounded-full object-cover ring-2 ring-emerald-500/30"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="font-bold text-sm text-neutral-900 dark:text-white truncate">
-                      {whatsAppProfile.name}
+                <div className="flex-1 flex flex-col justify-between animate-in zoom-in-95 duration-300">
+                  <div className="flex items-start justify-between">
+                    <div className="relative">
+                      <img
+                        src={whatsAppProfile.avatar}
+                        alt={whatsAppProfile.name}
+                        className="w-16 h-16 rounded-2xl object-cover ring-2 ring-emerald-500 shadow-md"
+                      />
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white p-0.5 shadow-sm">
+                        <img src={whatsappLogo} alt="WhatsApp" className="w-full h-full object-cover rounded-full" />
+                      </div>
                     </div>
-                    <div className="text-xs text-neutral-500 dark:text-neutral-400 font-mono">
-                      {whatsAppProfile.phone}
-                    </div>
-                    <span className="inline-block mt-0.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-                      ✓ Active session
+                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5 shadow-2xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>Connected</span>
                     </span>
+                  </div>
+
+                  <div className="space-y-1 pt-3">
+                    <h4 className="font-bold text-base text-neutral-900 dark:text-white">
+                      {whatsAppProfile.name}
+                    </h4>
+                    <p className="text-xs font-mono font-medium text-emerald-600 dark:text-emerald-400">
+                      {whatsAppProfile.phone}
+                    </p>
+                  </div>
+
+                  <div className="pt-2 text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span>Ready to sync</span>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onFlipCard('whatsapp');
+                      }}
+                      className="text-[10px] font-semibold text-rose-500 hover:text-rose-600 underline cursor-pointer"
+                    >
+                      Re-scan
+                    </button>
                   </div>
                 </div>
               ) : (
-                <div className="my-auto text-center py-4 space-y-1">
-                  <div className="w-12 h-12 rounded-2xl bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 flex items-center justify-center mx-auto mb-2 border border-neutral-200 dark:border-neutral-700">
-                    <IconQrCode className="w-6 h-6" />
+                <>
+                  <div className="flex items-start justify-between">
+                    <div className="w-12 h-12 rounded-xl bg-white shadow-xs p-1 ring-1 ring-neutral-200 dark:ring-neutral-700 flex items-center justify-center overflow-hidden">
+                      <img src={whatsappLogo} alt="WhatsApp" className="w-full h-full object-cover rounded-lg" />
+                    </div>
                   </div>
-                  <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                    Click to reveal QR Code
-                  </p>
-                  <p className="text-[11px] text-neutral-400 dark:text-neutral-500">
-                    Scan with WhatsApp Linked Devices
-                  </p>
-                </div>
-              )}
 
-              <div className="pt-2 border-t border-neutral-200/60 dark:border-neutral-800 text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center justify-between">
-                <span>Multi-Device Bridge</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                  {whatsAppProfile ? 'Re-scan' : 'Tap to scan →'}
-                </span>
-              </div>
+                  <div>
+                    <h4 className="font-bold text-base text-neutral-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
+                      WhatsApp Account
+                    </h4>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 leading-relaxed">
+                      Link international WhatsApp personal or business profiles.
+                    </p>
+                  </div>
+
+                  <div className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 group-hover:bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-xs transition">
+                    <IconQrCode className="w-3.5 h-3.5" />
+                    <span>Click to Pair WhatsApp</span>
+                  </div>
+                </>
+              )}
             </div>
 
-            {/* BACK FACE: Dedicated WhatsApp QR */}
-            <div className="absolute inset-0 w-full h-full rotate-y-180 backface-hidden rounded-2xl p-4 bg-white dark:bg-[#151518] border border-emerald-500/40 shadow-xl flex flex-col justify-between items-center text-center">
-              <div className="w-full flex items-center justify-between">
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                  <img src={whatsappLogo} alt="WhatsApp" className="w-3.5 h-3.5 object-contain" />
-                  <span>Scan WhatsApp QR</span>
-                </span>
-                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                  {qrCountdown}s
-                </span>
+            {/* BACK FACE: Dedicated QR Code Pairing View */}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="absolute inset-0 backface-hidden rotate-y-180 rounded-2xl p-3 border border-emerald-200 dark:border-emerald-800/80 bg-white dark:bg-[#18181b] flex flex-col items-center justify-between shadow-md cursor-default"
+            >
+              <div className="w-full flex items-center justify-between px-1 text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">
+                <div className="flex items-center gap-1.5">
+                  <img src={whatsappLogo} alt="WhatsApp" className="w-3.5 h-3.5 rounded-full" />
+                  <span>WhatsApp QR Code</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[10px] text-neutral-400">
+                    {qrCountdown > 0 ? `00:${qrCountdown < 10 ? `0${qrCountdown}` : qrCountdown}` : 'Expired'}
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onFlipCard('whatsapp');
+                    }}
+                    className="text-[10px] text-neutral-400 hover:text-neutral-700 dark:hover:text-white cursor-pointer px-1 py-0.5 rounded-sm hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                    title="Cancel"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
 
-              <div className="relative p-2.5 bg-white rounded-xl shadow-inner border border-neutral-200 my-1">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=chatbridge-wa-auth-${qrSeed}`}
-                  alt="WhatsApp QR"
-                  className="w-28 h-28 object-contain"
-                />
+              {/* Crisp SVG QR Code Grid */}
+              <div className="relative w-36 h-36 rounded-xl bg-neutral-900 dark:bg-white p-2 flex flex-wrap gap-1 shadow-inner overflow-hidden">
+                {Array.from({ length: 25 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-[23px] h-[23px] rounded-xs ${
+                      (i % 2 === 0 && (i + qrSeed) % 3 !== 0) || i === 0 || i === 4 || i === 20
+                        ? 'bg-white dark:bg-neutral-900'
+                        : 'bg-transparent'
+                    }`}
+                  />
+                ))}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-8 h-8 rounded-lg bg-white p-0.5 ring-2 ring-neutral-900 dark:ring-white shadow-md flex items-center justify-center">
+                    <img src={whatsappLogo} alt="WhatsApp" className="w-full h-full object-cover rounded-md" />
+                  </div>
+                </div>
               </div>
 
+              {/* Back Actions: Refresh + Simulate Scan */}
               <div className="w-full flex items-center gap-1.5 pt-1">
                 <button
-                  type="button"
                   onClick={onRegenerateQR}
                   className="p-2 rounded-xl text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-[10px] font-medium transition cursor-pointer"
                   title="Regenerate code"

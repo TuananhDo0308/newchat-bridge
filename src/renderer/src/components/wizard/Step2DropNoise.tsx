@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconCheck, IconUser, IconSparkle } from './WizardIcons.js';
+import { IconCheck } from './WizardIcons.js';
 import type { DropNoiseFilters, DropNoiseKey } from './types.js';
 
 interface Step2DropNoiseProps {
@@ -17,11 +17,11 @@ export function Step2DropNoise({
 }: Step2DropNoiseProps) {
   const activeDropCount = Object.values(dropNoiseFilters).filter(Boolean).length;
 
-  const dropNoiseBadgeList: { key: DropNoiseKey; label: string; desc: string }[] = [
-    { key: 'reactions', label: 'Reactions', desc: 'Silences thumbs up, hearts & emojis' },
-    { key: 'edits', label: 'Message Edits', desc: 'Preserves original raw draft for CRM audit' },
-    { key: 'stickers', label: 'Stickers', desc: 'Strips animated stickers from feed' },
-    { key: 'stories', label: 'Stories & Status', desc: 'Ignores social status story replies' },
+  const dropNoiseBadgeList: { key: DropNoiseKey; label: string }[] = [
+    { key: 'reactions', label: 'Reactions' },
+    { key: 'edits', label: 'Message Edits' },
+    { key: 'stickers', label: 'Stickers' },
+    { key: 'stories', label: 'Stories & Status' },
   ];
 
   return (
@@ -81,38 +81,6 @@ export function Step2DropNoise({
           );
         })}
       </div>
-
-      {/* Sleek Balanced Noise Suppression Info Card */}
-      <div className="rounded-2xl p-4 bg-neutral-50/70 dark:bg-neutral-900/40 border border-neutral-200/70 dark:border-neutral-800/80 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="p-1 rounded-lg bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border border-emerald-500/20">
-              <IconSparkle className="w-3.5 h-3.5" />
-            </span>
-            <span className="text-xs font-bold text-neutral-900 dark:text-white">
-              Smart Pipeline Protection
-            </span>
-          </div>
-          <span className="text-[10px] font-mono font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-            Active
-          </span>
-        </div>
-
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
-          DropNoise filters irrelevant messaging noise in real-time, preventing CRM deal clutter while maintaining a verified legal audit trail.
-        </p>
-
-        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-neutral-200/60 dark:border-neutral-800/70 text-[11px]">
-          <div className="p-2 rounded-xl bg-white/60 dark:bg-black/20 border border-neutral-200/50 dark:border-white/5">
-            <span className="text-[10px] text-neutral-400 block font-mono">CRM Cleanliness</span>
-            <span className="font-semibold text-neutral-900 dark:text-white mt-0.5 block">100% Business Value</span>
-          </div>
-          <div className="p-2 rounded-xl bg-white/60 dark:bg-black/20 border border-neutral-200/50 dark:border-white/5">
-            <span className="text-[10px] text-neutral-400 block font-mono">Audit Retention</span>
-            <span className="font-semibold text-neutral-900 dark:text-white mt-0.5 block">Zero History Loss</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -146,7 +114,7 @@ export function Step2DropNoisePreview({ dropNoiseFilters }: Step2DropNoisePrevie
         </span>
       </div>
 
-      {/* Glassy Floating Message Feed: Full height without awkward vertical centering */}
+      {/* Glassy Floating Message Feed: Clean messages with only content and timestamp */}
       <div className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0 py-2 scrollbar-thin scrollbar-thumb-white/10">
         {/* 1. Inbound Customer Message */}
         <div className="flex items-end gap-2.5 max-w-[88%] shrink-0">
@@ -161,75 +129,36 @@ export function Step2DropNoisePreview({ dropNoiseFilters }: Step2DropNoisePrevie
           </div>
         </div>
 
-        {/* 2. Outbound Message with EDITED AUDIT & REACTION PILL */}
+        {/* 2. Outbound Message with EDITED LINE & REACTION PILL */}
         <div className="flex items-end justify-end gap-2.5 ml-auto max-w-[90%] shrink-0">
-          <div className="space-y-1.5 flex flex-col items-end">
-            <div className="rounded-2xl rounded-br-xs px-3.5 py-2.5 bg-blue-600/40 backdrop-blur-md border border-blue-400/30 text-white shadow-md space-y-1.5 text-left">
-              <p className="text-xs leading-relaxed">
-                Hello! Absolutely, I will send the PDF proposal and enterprise license breakdown right away.
-              </p>
+          <div className="rounded-2xl rounded-br-xs px-3.5 py-2.5 bg-blue-600/40 backdrop-blur-md border border-blue-400/30 text-white shadow-md space-y-1.5 text-left">
+            <p className="text-xs leading-relaxed">
+              Hello! Absolutely, I will send the PDF proposal and enterprise license breakdown right away.
+            </p>
 
-              {/* NOISE 1: MESSAGE EDITS AUDIT TRAIL */}
-              <div
-                className={`p-2 rounded-xl text-xs font-mono transition-all border ${
-                  dropNoiseFilters.edits
-                    ? 'bg-black/40 border-rose-500/30 text-neutral-300'
-                    : 'bg-black/25 border-white/10 text-neutral-300'
+            {/* MESSAGE EDIT: Strikethrough if active, clean font-mono */}
+            <div
+              className={`text-[11px] font-mono pt-1 border-t border-white/10 ${
+                dropNoiseFilters.edits
+                  ? 'line-through decoration-rose-400 decoration-1 text-rose-200/80'
+                  : 'text-blue-200/70'
+              }`}
+            >
+              Original [10:31 AM]: &quot;I will send the draft in 5m&quot;
+            </div>
+
+            {/* REACTION & TIMESTAMP ROW: Only reaction pill and time */}
+            <div className="flex items-center justify-between text-[9px] font-mono pt-0.5">
+              <span
+                className={`inline-flex items-center px-2 py-0.5 rounded-full border transition-all ${
+                  dropNoiseFilters.reactions
+                    ? 'line-through decoration-rose-500 decoration-1 text-rose-300 bg-rose-950/40 border-rose-500/30'
+                    : 'bg-white/10 border-white/15 text-white/90'
                 }`}
               >
-                <div
-                  className={
-                    dropNoiseFilters.edits
-                      ? 'line-through decoration-rose-400 decoration-2 text-rose-300/80 text-[11px]'
-                      : 'text-neutral-300 text-[11px]'
-                  }
-                >
-                  Original [10:31 AM]: &quot;I will send the draft in 5m&quot;
-                </div>
-                <div className="flex items-center justify-between text-[10px] pt-1 mt-1 border-t border-white/10">
-                  {dropNoiseFilters.edits ? (
-                    <>
-                      <span className="text-emerald-300 font-semibold flex items-center gap-1">
-                        ✓ Audit: Kept original &amp; revised versions
-                      </span>
-                      <span className="text-rose-400 font-medium">✕ Edit Noise Replaced</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-amber-400">• Unfiltered</span>
-                      <span className="text-neutral-400">Overwritten without audit</span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Timestamp & NOISE 2: REACTION PILL */}
-              <div className="flex items-center justify-between text-[9px] text-blue-200/70 font-mono pt-0.5">
-                <div
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border transition-all ${
-                    dropNoiseFilters.reactions
-                      ? 'bg-rose-950/40 border-rose-500/30 text-rose-300'
-                      : 'bg-white/10 border-white/15 text-neutral-200'
-                  }`}
-                >
-                  <span
-                    className={
-                      dropNoiseFilters.reactions
-                        ? 'line-through decoration-rose-500 decoration-2 opacity-75'
-                        : ''
-                    }
-                  >
-                    👍 1
-                  </span>
-                  {dropNoiseFilters.reactions ? (
-                    <span className="text-[9px] font-mono text-rose-400">✕ Dropped Reaction</span>
-                  ) : (
-                    <span className="text-[9px] font-mono text-emerald-300">• Sync</span>
-                  )}
-                </div>
-
-                <span>10:32 AM (Edited)</span>
-              </div>
+                👍 1
+              </span>
+              <span className="text-blue-200/70">10:32 AM (Edited)</span>
             </div>
           </div>
           <div className="w-7 h-7 rounded-full overflow-hidden ring-1 ring-white/20 shrink-0 bg-neutral-800 shadow-sm">
@@ -237,85 +166,47 @@ export function Step2DropNoisePreview({ dropNoiseFilters }: Step2DropNoisePrevie
           </div>
         </div>
 
-        {/* 3. NOISE 3: STICKER MESSAGE */}
+        {/* 3. STICKER MESSAGE: Clean sticker and timestamp only */}
         <div className="flex items-end gap-2.5 max-w-[85%] shrink-0">
           <div className="w-7 h-7 rounded-full overflow-hidden ring-1 ring-white/20 shrink-0 bg-neutral-800 shadow-sm">
             <img src={customerAvatar} alt="Alexander" className="w-full h-full object-cover" />
           </div>
-          <div
-            className={`p-3 rounded-2xl rounded-bl-xs backdrop-blur-md border transition-all shadow-md space-y-1.5 ${
-              dropNoiseFilters.stickers
-                ? 'bg-rose-950/25 border-rose-500/30 text-white'
-                : 'bg-white/10 dark:bg-black/40 border border-white/15 text-white'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">🐱</span>
-              <div>
-                <span
-                  className={`text-xs font-semibold block ${
-                    dropNoiseFilters.stickers
-                      ? 'line-through decoration-rose-500 decoration-2 text-neutral-400'
-                      : 'text-white'
-                  }`}
-                >
-                  [Sticker: Animated Thumbs Up Cat]
-                </span>
-                <span className="text-[10px] text-neutral-400">Non-text cartoon sticker</span>
-              </div>
+          <div className="p-3 rounded-2xl rounded-bl-xs bg-white/10 dark:bg-black/40 backdrop-blur-md border border-white/15 text-white shadow-md space-y-1">
+            <div className="flex items-center gap-2.5">
+              <span className="text-2xl">🐱</span>
+              <span
+                className={`text-xs ${
+                  dropNoiseFilters.stickers
+                    ? 'line-through decoration-rose-500 decoration-1 text-neutral-400'
+                    : 'text-white'
+                }`}
+              >
+                [Sticker: Animated Thumbs Up Cat]
+              </span>
             </div>
-            <div className="flex items-center justify-between text-[10px] font-mono pt-1 border-t border-white/10">
-              {dropNoiseFilters.stickers ? (
-                <>
-                  <span className="text-rose-400 font-semibold">✕ Removed by DropNoise</span>
-                  <span className="text-neutral-400">Unsynced</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-emerald-400 font-semibold">• Synced to CRM</span>
-                  <span className="text-neutral-300">Sync</span>
-                </>
-              )}
-            </div>
+            <span className="text-[9px] text-white/50 font-mono block text-right">10:33 AM</span>
           </div>
         </div>
 
-        {/* 4. NOISE 4: STORY REPLY NOTIFICATION */}
+        {/* 4. STORY REPLY MESSAGE: Clean story reply and timestamp only */}
         <div className="flex items-end gap-2.5 max-w-[85%] shrink-0">
           <div className="w-7 h-7 rounded-full overflow-hidden ring-1 ring-white/20 shrink-0 bg-neutral-800 shadow-sm">
             <img src={customerAvatar} alt="Alexander" className="w-full h-full object-cover" />
           </div>
-          <div
-            className={`p-3 rounded-2xl rounded-bl-xs backdrop-blur-md border transition-all shadow-md space-y-1.5 ${
-              dropNoiseFilters.stories
-                ? 'bg-rose-950/25 border-rose-500/30 text-white'
-                : 'bg-white/10 dark:bg-black/40 border border-white/15 text-white'
-            }`}
-          >
-            <div className="p-2 rounded-xl bg-black/30 border border-white/10 space-y-0.5">
-              <div className="text-[10px] text-neutral-400 flex items-center gap-1.5">
-                <span>📷 Replied to your Story:</span>
-                <span className="font-semibold text-white">&quot;Q4 Enterprise Launch 🚀&quot;</span>
+          <div className="p-3 rounded-2xl rounded-bl-xs bg-white/10 dark:bg-black/40 backdrop-blur-md border border-white/15 text-white shadow-md space-y-1">
+            <div
+              className={`text-xs space-y-0.5 ${
+                dropNoiseFilters.stories
+                  ? 'line-through decoration-rose-500 decoration-1 text-neutral-400'
+                  : 'text-white'
+              }`}
+            >
+              <div className="text-[10px] text-neutral-400">
+                📷 Replied to your Story: &quot;Q4 Enterprise Launch 🚀&quot;
               </div>
-              <p className="text-xs text-neutral-200">
-                &quot;Looks great! Let us discuss pricing on the call tomorrow.&quot;
-              </p>
+              <p>&quot;Looks great! Let us discuss pricing on the call tomorrow.&quot;</p>
             </div>
-            <div className="flex items-center justify-between text-[10px] font-mono pt-1">
-              {dropNoiseFilters.stories ? (
-                <>
-                  <span className="line-through decoration-rose-500 decoration-2 text-rose-400 font-semibold">
-                    ✕ Story Reply Noise Dropped
-                  </span>
-                  <span className="text-neutral-400">Unsynced</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-emerald-400 font-semibold">• Synced to CRM</span>
-                  <span className="text-neutral-300">Sync</span>
-                </>
-              )}
-            </div>
+            <span className="text-[9px] text-white/50 font-mono block text-right">10:34 AM</span>
           </div>
         </div>
 
@@ -328,7 +219,7 @@ export function Step2DropNoisePreview({ dropNoiseFilters }: Step2DropNoisePrevie
             <p className="text-xs leading-relaxed">
               Thank you! Everything looks solid. Let&apos;s arrange a quick demo call tomorrow at 10 AM.
             </p>
-            <span className="text-[9px] text-white/50 font-mono mt-1 block text-right">10:33 AM</span>
+            <span className="text-[9px] text-white/50 font-mono mt-1 block text-right">10:34 AM</span>
           </div>
         </div>
 
