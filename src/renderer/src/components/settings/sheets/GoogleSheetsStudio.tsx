@@ -479,9 +479,17 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
                   <label className="text-xs font-bold text-neutral-900 dark:text-white">
                     {isVi ? 'Chọn hoặc tạo bảng tính Google Sheets' : 'Select or Create Google Spreadsheet'}
                   </label>
-                  <span className="text-[10px] text-neutral-400 font-normal">
-                    HeroUI Pro Autocomplete
-                  </span>
+                  {spreadsheetId ? (
+                    <a
+                      href={`https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1.5 cursor-pointer transition"
+                    >
+                      <span>{isVi ? 'Mở trên Sheets' : 'Open in Sheets'}</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  ) : null}
                 </div>
 
                 <Autocomplete
@@ -571,53 +579,6 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
                     </Autocomplete.Filter>
                   </Autocomplete.Popover>
                 </Autocomplete>
-              </div>
-
-              {/* Active Selected Sheet Details Card */}
-              <div className="p-3.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <FileSpreadsheet className="w-5 h-5 text-emerald-500 shrink-0" />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-neutral-900 dark:text-white truncate">
-                        {selectedFileName}
-                      </span>
-                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
-                        .gsheet
-                      </span>
-                    </div>
-                    <span className="text-[10px] text-neutral-400 font-mono truncate block">
-                      ID: {spreadsheetId}
-                    </span>
-                  </div>
-                </div>
-
-                <a
-                  href={`https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1.5 shrink-0"
-                >
-                  <span>{isVi ? 'Mở trên Sheets' : 'Open in Sheets'}</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              </div>
-
-              {/* Base Worksheet Tab Name Input */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-neutral-900 dark:text-white">
-                  {isVi ? 'Tên Tab mặc định (Worksheet Tab Name)' : 'Base Worksheet Tab Name'}
-                </label>
-                <input
-                  type="text"
-                  value={sheetName}
-                  onChange={(e) => {
-                    setSheetName(e.target.value);
-                    updateSheetsConfig({ sheetName: e.target.value });
-                  }}
-                  className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 font-medium text-neutral-900 dark:text-white"
-                  placeholder="Transcripts"
-                />
               </div>
 
               <div className="pt-2 flex items-center justify-between">
