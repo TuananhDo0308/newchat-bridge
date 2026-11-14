@@ -17,6 +17,9 @@ export function AccountRail() {
   const setScope = useChatBridgeStore((s) => s.setScope);
 
   const openSettings = useAppStore((s) => s.openSettings);
+  const closeSettings = useAppStore((s) => s.closeSettings);
+  const toggleSettings = useAppStore((s) => s.toggleSettings);
+  const isSettingsOpen = useAppStore((s) => s.isSettingsOpen);
 
   const railList = useMemo(() => selectRailAccounts(sources, chats), [sources, chats]);
 
@@ -27,7 +30,10 @@ export function AccountRail() {
         <Tooltip>
           <Tooltip.Trigger>
             <div
-              onClick={() => railList[0] && setScope({ network: railList[0].network, account: railList[0].account })}
+              onClick={() => {
+                if (isSettingsOpen) closeSettings();
+                if (railList[0]) setScope({ network: railList[0].network, account: railList[0].account });
+              }}
               className="w-11 h-11 cursor-pointer flex items-center justify-center"
             >
               <LogoIcon
@@ -46,11 +52,13 @@ export function AccountRail() {
 
         <div className="w-8 h-[1px] bg-neutral-300/60 dark:bg-neutral-800 my-1" />
 
-        {/* Dynamic Accounts (Same User Profile Portrait with official Zalo/WhatsApp logo corner badge) */}
+        {/* Dynamic Accounts */}
         <div className="flex flex-col items-center gap-3.5 w-full">
           {railList.map((account) => {
             const isCurrent =
-              scope?.network === account.network && scope?.account === account.account;
+              !isSettingsOpen &&
+              scope?.network === account.network &&
+              scope?.account === account.account;
             const isZalo = account.network === 'zalo';
 
             return (
@@ -62,10 +70,13 @@ export function AccountRail() {
                 <Tooltip>
                   <Tooltip.Trigger>
                     <button
-                      onClick={() => setScope({ network: account.network, account: account.account })}
+                      onClick={() => {
+                        if (isSettingsOpen) closeSettings();
+                        setScope({ network: account.network, account: account.account });
+                      }}
                       className={`relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${
                         isCurrent
-                           ? 'ring-2 ring-neutral-900 dark:ring-white ring-offset-2 ring-offset-[#edf3f0] dark:ring-offset-[#0a0a0a] shadow-md scale-105'
+                          ? 'ring-2 ring-neutral-900 dark:ring-white ring-offset-2 ring-offset-[#edf3f0] dark:ring-offset-[#0a0a0a] shadow-md scale-105'
                           : 'hover:scale-105 opacity-85 hover:opacity-100'
                       }`}
                     >
@@ -96,7 +107,7 @@ export function AccountRail() {
                     </button>
                   </Tooltip.Trigger>
 
-                  {/* Clean Tooltip: App Name & Account Name only */}
+                  {/* Tooltip */}
                   <Tooltip.Content
                     placement="right"
                     className="py-1.5 px-3 rounded-xl bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 text-xs shadow-md border border-neutral-200/80 dark:border-neutral-800 font-medium"
@@ -134,23 +145,29 @@ export function AccountRail() {
         </div>
       </div>
 
-      {/* Bottom Rail: Only Settings Button (Mode switcher & Wizard removed as requested) */}
+      {/* Bottom Rail: Settings Button (Toggles Full Page Settings) */}
       <div className="no-drag flex flex-col items-center">
         <Tooltip>
           <Tooltip.Trigger>
             <button
-              onClick={() => openSettings('appearance')}
-              className="w-11 h-11 rounded-2xl flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-neutral-800/80 transition-all cursor-pointer group"
+              onClick={() => toggleSettings('setup')}
+              className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer group ${
+                isSettingsOpen
+                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-md scale-105'
+                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-neutral-800/80'
+              }`}
               aria-label="Open Settings"
             >
-              <Settings className="w-5 h-5 stroke-[1.8] group-hover:rotate-45 transition-transform duration-300" />
+              <Settings className={`w-5 h-5 stroke-[1.8] transition-transform duration-300 ${
+                isSettingsOpen ? 'rotate-90' : 'group-hover:rotate-45'
+              }`} />
             </button>
           </Tooltip.Trigger>
           <Tooltip.Content
             placement="right"
             className="py-1 px-2.5 rounded-lg bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 text-xs shadow-md border border-neutral-200/80 dark:border-neutral-800 font-semibold"
           >
-            Preferences & Settings
+            {isSettingsOpen ? 'Close Settings (Esc)' : 'Settings & Preferences'}
           </Tooltip.Content>
         </Tooltip>
       </div>

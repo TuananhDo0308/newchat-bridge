@@ -5,13 +5,14 @@ import { AccountRail } from './components/layout/AccountRail.js';
 import { ConversationSidebar } from './components/layout/ConversationSidebar.js';
 import { ChatArea } from './components/layout/ChatArea.js';
 import { OnboardingWizard } from './components/wizard/OnboardingWizard.js';
-import { SettingsModal } from './components/settings/SettingsModal.js';
+import { SettingsScreen } from './components/settings/SettingsScreen.js';
 
 export function App() {
   const loadData = useChatBridgeStore((s) => s.loadData);
   const theme = useAppStore((s) => s.theme);
   const isWizardOpen = useAppStore((s) => s.isWizardOpen);
   const closeWizard = useAppStore((s) => s.closeWizard);
+  const isSettingsOpen = useAppStore((s) => s.isSettingsOpen);
 
   useEffect(() => {
     loadData();
@@ -27,19 +28,23 @@ export function App() {
       {/* Block 1: Leftmost Account & Channel Rail */}
       <AccountRail />
 
-      {/* Block 2: Middle Conversation List Sidebar */}
-      <ConversationSidebar />
+      {/* Block 2 & 3: Either Full Page Settings Screen OR Active Chat Workspace */}
+      {isSettingsOpen ? (
+        <SettingsScreen />
+      ) : (
+        <>
+          {/* Middle Conversation List Sidebar */}
+          <ConversationSidebar />
 
-      {/* Block 3: Expanded Active Chat Workspace */}
-      <ChatArea />
+          {/* Expanded Active Chat Workspace */}
+          <ChatArea />
+        </>
+      )}
 
       {/* Block 4: First-time Onboarding Setup Wizard Overlay with Dynamic Ambient Waves */}
       {isWizardOpen && (
         <OnboardingWizard onComplete={closeWizard} />
       )}
-
-      {/* Block 5: Comprehensive Desktop Settings Modal */}
-      <SettingsModal />
     </div>
   );
 }
