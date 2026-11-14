@@ -1,5 +1,10 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { Button } from '@heroui/react';
+import React, { useState, useRef, useMemo } from 'react';
+import {
+  Autocomplete,
+  SearchField,
+  ListBox,
+  Button,
+} from '@heroui/react';
 import { useAppStore } from '../../../store/useAppStore.js';
 import {
   allSheetColumns,
@@ -157,9 +162,7 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
   const [selectedFileName, setSelectedFileName] = useState(sheetsConfig.selectedFileName || 'ChatBridge_Transcripts_2026');
 
   // Autocomplete state
-  const [sheetSearchQuery, setSheetSearchQuery] = useState(selectedFileName);
-  const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
-  const autocompleteRef = useRef<HTMLDivElement>(null);
+  const [sheetSearchQuery, setSheetSearchQuery] = useState('');
 
   // Drive sheets mock list
   const driveSheetsList = useMemo(() => [
@@ -178,22 +181,9 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
     );
   }, [driveSheetsList, sheetSearchQuery]);
 
-  // Click outside listener for Autocomplete
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (autocompleteRef.current && !autocompleteRef.current.contains(e.target as Node)) {
-        setIsAutocompleteOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const handleSelectSheet = (sheet: { name: string; id: string }) => {
     setSelectedFileName(sheet.name);
     setSpreadsheetId(sheet.id);
-    setSheetSearchQuery(sheet.name);
-    setIsAutocompleteOpen(false);
     updateSheetsConfig({ selectedFileName: sheet.name, spreadsheetId: sheet.id });
   };
 
@@ -202,8 +192,6 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
     const newId = '1' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     setSelectedFileName(trimmed);
     setSpreadsheetId(newId);
-    setSheetSearchQuery(trimmed);
-    setIsAutocompleteOpen(false);
     updateSheetsConfig({ selectedFileName: trimmed, spreadsheetId: newId, createMode: 'new' });
   };
 
@@ -503,102 +491,105 @@ export function GoogleSheetsStudio({ isVi = false, onClose }: GoogleSheetsStudio
             </p>
           </div>
 
-          {/* PRO UI AUTOCOMPLETE FIELD WITH CREATE OPTION */}
-          <div className="space-y-1.5" ref={autocompleteRef}>
-            <label className="text-xs font-bold text-neutral-900 dark:text-white flex items-center justify-between">
-              <span>{isVi ? 'Chọn hoặc tạo bảng tính Google Sheets' : 'Select or Create Google Spreadsheet'}</span>
+          {/* OFFICIAL PRO UI AUTOCOMPLETE FIELD WITH CREATE OPTION */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-neutral-900 dark:text-white">
+                {isVi ? 'Chọn hoặc tạo bảng tính Google Sheets' : 'Select or Create Google Spreadsheet'}
+              </label>
               <span className="text-[10px] text-neutral-400 font-normal">
-                {isVi ? 'Hỗ trợ tìm kiếm & tạo mới' : 'Supports search & instant creation'}
+                {isVi ? 'HeroUI Pro Autocomplete' : 'HeroUI Pro Autocomplete'}
               </span>
-            </label>
+            </div>
 
-            <div className="relative">
-              {/* Autocomplete Search Input */}
-              <div className="relative flex items-center">
-                <span className="absolute left-3 text-neutral-400 pointer-events-none">
-                  <IconSearch className="w-4 h-4" />
-                </span>
-                <input
-                  type="text"
-                  value={sheetSearchQuery}
-                  onChange={(e) => {
-                    setSheetSearchQuery(e.target.value);
-                    setIsAutocompleteOpen(true);
-                  }}
-                  onFocus={() => setIsAutocompleteOpen(true)}
-                  placeholder={isVi ? 'Tìm bảng tính trên Drive hoặc nhập tên mới...' : 'Search Google Drive sheets or type new name...'}
-                  className="w-full pl-9 pr-10 py-2.5 rounded-xl text-xs bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 font-semibold text-neutral-900 dark:text-white shadow-2xs transition"
-                />
-                <button
-                  type="button"
-                  onClick={() => setIsAutocompleteOpen(!isAutocompleteOpen)}
-                  className="absolute right-3 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 cursor-pointer text-xs"
-                >
-                  ▼
-                </button>
-              </div>
+            <Autocomplete
+              className="w-full"
+              onSelectionChange={(key) => {
+                if (!key) return;
+                const k = String(key);
+                if (k === '__create_new__') {
+                  handleCreateNewSheet(sheetSearchQuery.trim() || 'New_ChatBridge_Spreadsheet');
+                } else {
+                  const found = driveSheetsList.find((s) => s.id === k);
+                  if (found) {
+                    handleSelectSheet(found);
+                  }
+                }
+              }}
+            >
+              <Autocomplete.Trigger className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:border-neutral-400 dark:hover:border-neutral-600 transition flex items-center justify-between text-xs font-semibold text-neutral-900 dark:text-white shadow-2xs cursor-pointer">
+                <div className="flex items-center gap-2 truncate">
+                  <span className="text-emerald-500 font-bold text-sm">📊</span>
+                  <Autocomplete.Value placeholder={selectedFileName || (isVi ? 'Chọn bảng tính từ Drive...' : 'Select spreadsheet from Drive...')} />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Autocomplete.ClearButton />
+                  <Autocomplete.Indicator />
+                </div>
+              </Autocomplete.Trigger>
 
-              {/* Autocomplete Dropdown Popover */}
-              {isAutocompleteOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1.5 p-1.5 rounded-2xl bg-white dark:bg-[#18181b] border border-neutral-200 dark:border-neutral-700 shadow-xl z-50 max-h-64 overflow-y-auto space-y-1 animate-in fade-in zoom-in-95 duration-100">
-                  {/* Option: Create New Spreadsheet */}
-                  {sheetSearchQuery.trim() && !driveSheetsList.some((s) => s.name.toLowerCase() === sheetSearchQuery.trim().toLowerCase()) && (
-                    <button
-                      type="button"
-                      onClick={() => handleCreateNewSheet(sheetSearchQuery)}
-                      className="w-full p-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-left transition flex items-center gap-2.5 cursor-pointer group"
+              <Autocomplete.Popover className="w-full p-2 bg-white dark:bg-[#18181b] border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xl z-50">
+                <Autocomplete.Filter>
+                  <SearchField className="mb-2">
+                    <SearchField.Group className="flex items-center px-2.5 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500/30 transition">
+                      <SearchField.SearchIcon className="w-3.5 h-3.5 text-neutral-400 mr-2 shrink-0" />
+                      <SearchField.Input
+                        value={sheetSearchQuery}
+                        onChange={(e) => setSheetSearchQuery(e.target.value)}
+                        placeholder={isVi ? 'Tìm kiếm hoặc nhập tên mới...' : 'Search Google Drive sheets or type new name...'}
+                        className="w-full text-xs bg-transparent outline-none text-neutral-900 dark:text-white font-medium"
+                      />
+                      <SearchField.ClearButton />
+                    </SearchField.Group>
+                  </SearchField>
+
+                  <ListBox className="space-y-1 max-h-60 overflow-y-auto">
+                    {/* Option: Create New Spreadsheet */}
+                    <ListBox.Item
+                      id="__create_new__"
+                      textValue={sheetSearchQuery.trim() ? `Tạo mới: ${sheetSearchQuery.trim()}` : 'Tạo bảng tính mới'}
+                      className="p-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 cursor-pointer flex items-center gap-2.5 transition select-none"
                     >
                       <div className="w-6 h-6 rounded-lg bg-emerald-500 text-white flex items-center justify-center shrink-0">
-                        <IconPlus className="w-4 h-4 stroke-[3]" />
+                        <IconPlus className="w-3.5 h-3.5 stroke-[3]" />
                       </div>
                       <div className="min-w-0">
                         <div className="text-xs font-bold truncate">
-                          {isVi ? `+ Tạo bảng tính mới: "${sheetSearchQuery.trim()}"` : `+ Create new spreadsheet: "${sheetSearchQuery.trim()}"`}
+                          {sheetSearchQuery.trim()
+                            ? (isVi ? `+ Tạo bảng tính mới: "${sheetSearchQuery.trim()}"` : `+ Create new spreadsheet: "${sheetSearchQuery.trim()}"`)
+                            : (isVi ? '+ Tạo bảng tính mới trên Google Drive' : '+ Create new spreadsheet on Drive')}
                         </div>
-                        <div className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5">
-                          {isVi ? 'Tự động cấp phát file mới trên Google Drive' : 'Auto-provisions new file on your Google Drive'}
+                        <div className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                          {isVi ? 'Tự động cấp phát file mới và đồng bộ dữ liệu' : 'Auto-provisions file and syncs data'}
                         </div>
                       </div>
-                    </button>
-                  )}
+                    </ListBox.Item>
 
-                  {/* Header of Fetched Drive Sheets */}
-                  <div className="px-2 py-1 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-                    {isVi ? 'Bảng tính tìm thấy trên Google Drive' : 'Existing Google Drive Spreadsheets'}
-                  </div>
-
-                  {filteredSheets.length === 0 ? (
-                    <div className="p-3 text-center text-xs text-neutral-400">
-                      {isVi ? 'Không tìm thấy bảng tính phù hợp.' : 'No matching spreadsheets found.'}
-                    </div>
-                  ) : (
-                    filteredSheets.map((file) => {
-                      const isChosen = selectedFileName === file.name;
-                      return (
-                        <button
-                          key={file.id}
-                          type="button"
-                          onClick={() => handleSelectSheet(file)}
-                          className={`w-full p-2 rounded-xl text-left transition flex items-center justify-between cursor-pointer select-none ${
-                            isChosen
-                              ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold shadow-2xs'
-                              : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 truncate">
-                            <span className="text-emerald-500 font-bold text-sm">📊</span>
-                            <span className="text-xs truncate">{file.name}</span>
-                          </div>
-                          <span className={`text-[10px] font-mono shrink-0 ${isChosen ? 'text-neutral-300 dark:text-neutral-600' : 'text-neutral-400'}`}>
-                            {file.modified}
-                          </span>
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              )}
-            </div>
+                    {/* Fetched Drive Spreadsheets */}
+                    {filteredSheets.map((file) => (
+                      <ListBox.Item
+                        key={file.id}
+                        id={file.id}
+                        textValue={file.name}
+                        className={`p-2 rounded-xl text-left transition flex items-center justify-between cursor-pointer select-none text-xs ${
+                          selectedFileName === file.name
+                            ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold shadow-2xs'
+                            : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="text-emerald-500 font-bold text-sm">📊</span>
+                          <span className="text-xs truncate">{file.name}</span>
+                        </div>
+                        <span className={`text-[10px] font-mono shrink-0 ${selectedFileName === file.name ? 'text-neutral-300 dark:text-neutral-600' : 'text-neutral-400'}`}>
+                          {file.modified}
+                        </span>
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Autocomplete.Filter>
+              </Autocomplete.Popover>
+            </Autocomplete>
           </div>
 
           {/* Active Selected Sheet Details Card */}
