@@ -42,8 +42,11 @@ export function ConversationSidebar() {
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
 
-  // HeroUI Confirmation Modal state for unsyncing
-  const [chatToUnsync, setChatToUnsync] = useState<Chat | null>(null);
+  // HeroUI Confirmation Modal state for syncing & unsyncing
+  const [syncConfirmTarget, setSyncConfirmTarget] = useState<{
+    chat: Chat;
+    action: 'sync' | 'unsync';
+  } | null>(null);
 
   // Active rail account info
   const railList = useMemo(() => selectRailAccounts(sources, chats), [sources, chats]);
@@ -126,11 +129,10 @@ export function ConversationSidebar() {
   };
 
   const handleToggleSyncRequest = (chat: Chat) => {
-    if (chat.selected) {
-      setChatToUnsync(chat);
-    } else {
-      toggleChatSync(chat.id);
-    }
+    setSyncConfirmTarget({
+      chat,
+      action: chat.selected ? 'unsync' : 'sync',
+    });
   };
 
   return (
@@ -330,11 +332,11 @@ export function ConversationSidebar() {
         )}
       </ScrollShadow>
 
-      {/* HeroUI Built-in Confirmation Modal for Unsyncing with Visual Contact Card */}
+      {/* HeroUI Built-in Confirmation Modal for Syncing & Unsyncing with Visual Contact Card */}
       <Modal.Root
-        isOpen={!!chatToUnsync}
+        isOpen={!!syncConfirmTarget}
         onOpenChange={(open) => {
-          if (!open) setChatToUnsync(null);
+          if (!open) setSyncConfirmTarget(null);
         }}
       >
         <Modal.Backdrop className="fixed inset-0 bg-black/65 backdrop-blur-xs z-50 transition-opacity flex items-center justify-center p-4">
@@ -342,33 +344,47 @@ export function ConversationSidebar() {
             <Modal.Dialog className="w-full bg-white dark:bg-[#121212] rounded-3xl p-6 shadow-2xl border border-neutral-100 dark:border-neutral-800 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150">
               {/* Modal Header */}
               <Modal.Header className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
-                  <AlertTriangle className="w-5 h-5" />
+                <div
+                  className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
+                    syncConfirmTarget?.action === 'unsync'
+                      ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60 text-amber-600 dark:text-amber-400'
+                      : syncConfirmTarget?.chat.network === 'zalo'
+                      ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/60 text-blue-600 dark:text-blue-400'
+                      : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-600 dark:text-emerald-400'
+                  }`}
+                >
+                  {syncConfirmTarget?.action === 'unsync' ? (
+                    <AlertTriangle className="w-5 h-5" />
+                  ) : (
+                    <CheckCheck className="w-5 h-5" />
+                  )}
                 </div>
                 <div>
                   <Modal.Heading className="text-base font-bold text-neutral-900 dark:text-white">
-                    Unsync Conversation
+                    {syncConfirmTarget?.action === 'unsync' ? 'Unsync Conversation' : 'Sync Conversation'}
                   </Modal.Heading>
                   <p className="text-xs text-neutral-400 dark:text-neutral-500">
-                    Stop real-time message sync
+                    {syncConfirmTarget?.action === 'unsync'
+                      ? 'Stop real-time message sync'
+                      : 'Enable real-time message sync'}
                   </p>
                 </div>
               </Modal.Header>
 
               {/* Visual Contact Card: Avatar, App Logo, Name, Phone */}
-              {chatToUnsync && (
+              {syncConfirmTarget && (
                 <div className="p-3.5 rounded-2xl bg-neutral-50 dark:bg-[#18181b] border border-neutral-200/80 dark:border-neutral-800 flex items-center gap-3.5">
                   <div className="relative shrink-0">
                     <Avatar size="lg" className="w-14 h-14 rounded-2xl ring-2 ring-white dark:ring-neutral-700 shadow-sm overflow-hidden">
-                      <Avatar.Image src={chatToUnsync.avatar} alt={chatToUnsync.name} />
+                      <Avatar.Image src={syncConfirmTarget.chat.avatar} alt={syncConfirmTarget.chat.name} />
                       <Avatar.Fallback className="text-base font-bold bg-neutral-800 text-white">
-                        {chatToUnsync.name.slice(0, 2)}
+                        {syncConfirmTarget.chat.name.slice(0, 2)}
                       </Avatar.Fallback>
                     </Avatar>
                     <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full ring-2 ring-white dark:ring-[#18181b] overflow-hidden bg-white shadow-xs flex items-center justify-center">
                       <img
-                        src={chatToUnsync.network === 'zalo' ? zaloLogo : whatsappLogo}
-                        alt={chatToUnsync.network}
+                        src={syncConfirmTarget.chat.network === 'zalo' ? zaloLogo : whatsappLogo}
+                        alt={syncConfirmTarget.chat.network}
                         className="w-full h-full object-cover"
                       />
                     </div>
@@ -377,28 +393,28 @@ export function ConversationSidebar() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <h4 className="font-bold text-sm text-neutral-900 dark:text-white truncate">
-                        {chatToUnsync.name}
+                        {syncConfirmTarget.chat.name}
                       </h4>
                       <span
                         className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                          chatToUnsync.network === 'zalo'
+                          syncConfirmTarget.chat.network === 'zalo'
                             ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border-blue-200/60 dark:border-blue-800/60'
                             : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-800/60'
                         }`}
                       >
-                        {chatToUnsync.network === 'zalo' ? 'Zalo' : 'WhatsApp'}
+                        {syncConfirmTarget.chat.network === 'zalo' ? 'Zalo' : 'WhatsApp'}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                      {chatToUnsync.phoneNumber ? (
+                      {syncConfirmTarget.chat.phoneNumber ? (
                         <span className="font-mono text-[11px] font-medium text-neutral-600 dark:text-neutral-300">
-                          📞 {chatToUnsync.phoneNumber}
+                          📞 {syncConfirmTarget.chat.phoneNumber}
                         </span>
-                      ) : chatToUnsync.kind === 'group' ? (
-                        <span>👥 Group • {chatToUnsync.memberCount || 24} members</span>
+                      ) : syncConfirmTarget.chat.kind === 'group' ? (
+                        <span>👥 Group • {syncConfirmTarget.chat.memberCount || 24} members</span>
                       ) : (
-                        <span className="font-mono text-[11px]">{chatToUnsync.account}</span>
+                        <span className="font-mono text-[11px]">{syncConfirmTarget.chat.account}</span>
                       )}
                     </div>
                   </div>
@@ -407,31 +423,51 @@ export function ConversationSidebar() {
 
               {/* Informative Explanation */}
               <Modal.Body className="text-xs text-neutral-600 dark:text-neutral-300 leading-relaxed py-0.5">
-                Are you sure you want to stop syncing messages for{' '}
-                <strong className="text-neutral-900 dark:text-white font-semibold">{chatToUnsync?.name}</strong>?
-                Previously synchronized messages will remain safely stored on your CRM, but future messages will no longer sync.
+                {syncConfirmTarget?.action === 'unsync' ? (
+                  <>
+                    Are you sure you want to stop syncing messages for{' '}
+                    <strong className="text-neutral-900 dark:text-white font-semibold">
+                      {syncConfirmTarget?.chat.name}
+                    </strong>
+                    ? Previously synchronized messages will remain safely stored on your CRM, but future messages will no longer sync.
+                  </>
+                ) : (
+                  <>
+                    Are you sure you want to enable message synchronization for{' '}
+                    <strong className="text-neutral-900 dark:text-white font-semibold">
+                      {syncConfirmTarget?.chat.name}
+                    </strong>
+                    ? Incoming and historical customer messages will be safely forwarded to your connected CRM and spreadsheet destinations.
+                  </>
+                )}
               </Modal.Body>
 
               <Modal.Footer className="flex items-center justify-end gap-2.5 pt-2">
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition"
-                  onPress={() => setChatToUnsync(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition cursor-pointer"
+                  onPress={() => setSyncConfirmTarget(null)}
                 >
                   Cancel
                 </Button>
                 <Button
                   size="sm"
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-xs transition"
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold text-white shadow-xs transition cursor-pointer ${
+                    syncConfirmTarget?.action === 'unsync'
+                      ? 'bg-rose-600 hover:bg-rose-700'
+                      : syncConfirmTarget?.chat.network === 'zalo'
+                      ? 'bg-blue-600 hover:bg-blue-700'
+                      : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
                   onPress={() => {
-                    if (chatToUnsync) {
-                      toggleChatSync(chatToUnsync.id);
-                      setChatToUnsync(null);
+                    if (syncConfirmTarget) {
+                      toggleChatSync(syncConfirmTarget.chat.id);
+                      setSyncConfirmTarget(null);
                     }
                   }}
                 >
-                  Confirm Unsync
+                  {syncConfirmTarget?.action === 'unsync' ? 'Confirm Unsync' : 'Confirm Sync'}
                 </Button>
               </Modal.Footer>
             </Modal.Dialog>

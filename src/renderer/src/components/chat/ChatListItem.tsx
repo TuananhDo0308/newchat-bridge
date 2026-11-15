@@ -104,20 +104,21 @@ export function ChatListItem({
           {chat.selected ? (
             <Tooltip>
               <Tooltip.Trigger>
-                <span
+                <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     onToggleSync();
                   }}
-                  className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border transition ${
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border transition shadow-2xs cursor-pointer active:scale-95 ${
                     isZalo
-                      ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-100'
-                      : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100'
+                      ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/60'
+                      : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
                   }`}
                 >
                   <CheckCheck className={`w-3 h-3 ${isZalo ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'}`} />
-                  Synced
-                </span>
+                  <span>Synced</span>
+                </button>
               </Tooltip.Trigger>
               <Tooltip.Content
                 placement="top"
@@ -127,16 +128,28 @@ export function ChatListItem({
               </Tooltip.Content>
             </Tooltip>
           ) : (
-            <span
-              onClick={(e) => {
-                if (showCheckbox) return;
-                e.stopPropagation();
-                onToggleSync();
-              }}
-              className="text-[10px] text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition"
-            >
-              Unsynced
-            </span>
+            <Tooltip>
+              <Tooltip.Trigger>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    if (showCheckbox) return;
+                    e.stopPropagation();
+                    onToggleSync();
+                  }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border border-neutral-200/90 dark:border-neutral-700/80 bg-neutral-100 dark:bg-neutral-800/90 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/90 dark:hover:bg-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 transition shadow-2xs cursor-pointer active:scale-95 group/btn"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 dark:bg-neutral-500 group-hover/btn:bg-neutral-700 dark:group-hover/btn:bg-neutral-200 transition-colors" />
+                  <span>Unsynced</span>
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content
+                placement="top"
+                className="py-1 px-2.5 rounded-lg bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 text-xs shadow-md border border-neutral-200/80 dark:border-neutral-800 font-medium"
+              >
+                Click to Sync
+              </Tooltip.Content>
+            </Tooltip>
           )}
         </div>
       </div>

@@ -16,15 +16,11 @@ export function ChatHeader({ chat, onToggleSync }: ChatHeaderProps) {
   const isGroup = chat.kind === 'group';
   const closeMobileChat = useChatBridgeStore((s) => s.closeMobileChat);
 
-  // HeroUI Confirmation Modal state for unsyncing
-  const [isUnsyncConfirmOpen, setIsUnsyncConfirmOpen] = useState(false);
+  // HeroUI Confirmation Modal state for sync / unsync
+  const [syncConfirmAction, setSyncConfirmAction] = useState<'sync' | 'unsync' | null>(null);
 
   const handleSyncButtonClick = () => {
-    if (chat.selected) {
-      setIsUnsyncConfirmOpen(true);
-    } else {
-      onToggleSync();
-    }
+    setSyncConfirmAction(chat.selected ? 'unsync' : 'sync');
   };
 
   return (
@@ -125,24 +121,38 @@ export function ChatHeader({ chat, onToggleSync }: ChatHeaderProps) {
         </Button>
       </div>
 
-      {/* HeroUI Confirmation Modal for Unsyncing in Header with Visual Contact Card */}
+      {/* HeroUI Confirmation Modal for Syncing & Unsyncing in Header with Visual Contact Card */}
       <Modal.Root
-        isOpen={isUnsyncConfirmOpen}
-        onOpenChange={(open) => setIsUnsyncConfirmOpen(open)}
+        isOpen={!!syncConfirmAction}
+        onOpenChange={(open) => {
+          if (!open) setSyncConfirmAction(null);
+        }}
       >
         <Modal.Backdrop className="fixed inset-0 bg-black/65 backdrop-blur-xs z-50 transition-opacity flex items-center justify-center p-4">
           <Modal.Container className="w-full max-w-md">
             <Modal.Dialog className="w-full bg-white dark:bg-[#121212] rounded-3xl p-6 shadow-2xl border border-neutral-100 dark:border-neutral-800 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150">
               <Modal.Header className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
-                  <AlertTriangle className="w-5 h-5" />
+                <div
+                  className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
+                    syncConfirmAction === 'unsync'
+                      ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60 text-amber-600 dark:text-amber-400'
+                      : isZalo
+                      ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/60 text-blue-600 dark:text-blue-400'
+                      : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-600 dark:text-emerald-400'
+                  }`}
+                >
+                  {syncConfirmAction === 'unsync' ? (
+                    <AlertTriangle className="w-5 h-5" />
+                  ) : (
+                    <CheckCheck className="w-5 h-5" />
+                  )}
                 </div>
                 <div>
                   <Modal.Heading className="text-base font-bold text-neutral-900 dark:text-white">
-                    Unsync Conversation
+                    {syncConfirmAction === 'unsync' ? 'Unsync Conversation' : 'Sync Conversation'}
                   </Modal.Heading>
                   <p className="text-xs text-neutral-400 dark:text-neutral-500">
-                    Stop real-time message sync
+                    {syncConfirmAction === 'unsync' ? 'Stop real-time message sync' : 'Enable real-time message sync'}
                   </p>
                 </div>
               </Modal.Header>
@@ -196,29 +206,45 @@ export function ChatHeader({ chat, onToggleSync }: ChatHeaderProps) {
               </div>
 
               <Modal.Body className="text-xs text-neutral-600 dark:text-neutral-300 leading-relaxed py-0.5">
-                Are you sure you want to stop syncing messages for{' '}
-                <strong className="text-neutral-900 dark:text-white font-semibold">{chat.name}</strong>?
-                Previously synchronized messages will remain safely stored on your CRM, but future messages will no longer sync.
+                {syncConfirmAction === 'unsync' ? (
+                  <>
+                    Are you sure you want to stop syncing messages for{' '}
+                    <strong className="text-neutral-900 dark:text-white font-semibold">{chat.name}</strong>?
+                    Previously synchronized messages will remain safely stored on your CRM, but future messages will no longer sync.
+                  </>
+                ) : (
+                  <>
+                    Are you sure you want to enable message synchronization for{' '}
+                    <strong className="text-neutral-900 dark:text-white font-semibold">{chat.name}</strong>?
+                    Incoming and historical customer messages will be safely forwarded to your connected CRM and spreadsheet destinations.
+                  </>
+                )}
               </Modal.Body>
 
               <Modal.Footer className="flex items-center justify-end gap-2.5 pt-2">
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition"
-                  onPress={() => setIsUnsyncConfirmOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition cursor-pointer"
+                  onPress={() => setSyncConfirmAction(null)}
                 >
                   Cancel
                 </Button>
                 <Button
                   size="sm"
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-xs transition"
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold text-white shadow-xs transition cursor-pointer ${
+                    syncConfirmAction === 'unsync'
+                      ? 'bg-rose-600 hover:bg-rose-700'
+                      : isZalo
+                      ? 'bg-blue-600 hover:bg-blue-700'
+                      : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
                   onPress={() => {
-                    setIsUnsyncConfirmOpen(false);
+                    setSyncConfirmAction(null);
                     onToggleSync();
                   }}
                 >
-                  Confirm Unsync
+                  {syncConfirmAction === 'unsync' ? 'Confirm Unsync' : 'Confirm Sync'}
                 </Button>
               </Modal.Footer>
             </Modal.Dialog>
