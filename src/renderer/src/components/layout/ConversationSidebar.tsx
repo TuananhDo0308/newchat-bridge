@@ -41,12 +41,19 @@ export function ConversationSidebar() {
   // Multi-select mode state for Unsynced list
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
+  const [isBatchSyncConfirmOpen, setIsBatchSyncConfirmOpen] = useState(false);
+  const [isBatchSyncing, setIsBatchSyncing] = useState(false);
 
   // HeroUI Confirmation Modal state for syncing & unsyncing
   const [syncConfirmTarget, setSyncConfirmTarget] = useState<{
     chat: Chat;
     action: 'sync' | 'unsync';
   } | null>(null);
+
+  // Selected batch chat objects for confirmation modal preview
+  const selectedBatchChats = useMemo(() => {
+    return chats.filter((c) => selectedBatchIds.includes(c.id));
+  }, [chats, selectedBatchIds]);
 
   // Active rail account info
   const railList = useMemo(() => selectRailAccounts(sources, chats), [sources, chats]);
@@ -121,11 +128,17 @@ export function ConversationSidebar() {
     );
   };
 
-  const handleBatchSyncAll = async () => {
+  const handleBatchSyncConfirm = async () => {
     if (selectedBatchIds.length === 0) return;
-    await batchSyncChats(selectedBatchIds, true);
-    setSelectedBatchIds([]);
-    setIsSelectMode(false);
+    setIsBatchSyncing(true);
+    try {
+      await batchSyncChats(selectedBatchIds, true);
+      setSelectedBatchIds([]);
+      setIsSelectMode(false);
+      setIsBatchSyncConfirmOpen(false);
+    } finally {
+      setIsBatchSyncing(false);
+    }
   };
 
   const handleToggleSyncRequest = (chat: Chat) => {
@@ -176,6 +189,7 @@ export function ConversationSidebar() {
               setSyncFilter('sync');
               setIsSelectMode(false);
               setSelectedBatchIds([]);
+              setIsBatchSyncConfirmOpen(false);
             }}
             className={`flex-1 py-1.5 rounded-lg font-medium transition text-center flex items-center justify-center gap-1.5 ${
               syncFilter === 'sync'
@@ -246,7 +260,10 @@ export function ConversationSidebar() {
             <button
               onClick={() => {
                 setIsSelectMode((prev) => !prev);
-                if (isSelectMode) setSelectedBatchIds([]);
+                if (isSelectMode) {
+                  setSelectedBatchIds([]);
+                  setIsBatchSyncConfirmOpen(false);
+                }
               }}
               className={`px-3 py-1 rounded-full text-[11px] font-medium transition border flex items-center gap-1 ${
                 isSelectMode
@@ -292,13 +309,13 @@ export function ConversationSidebar() {
             <Button
               size="sm"
               variant="primary"
-              className={`text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 shadow-xs transition disabled:opacity-50 disabled:pointer-events-none ${
+              className={`text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 shadow-xs transition cursor-pointer disabled:opacity-50 disabled:pointer-events-none ${
                 isZalo
                   ? 'bg-blue-600 hover:bg-blue-700'
                   : 'bg-emerald-600 hover:bg-emerald-700'
               }`}
               isDisabled={selectedBatchIds.length === 0}
-              onPress={handleBatchSyncAll}
+              onPress={() => setIsBatchSyncConfirmOpen(true)}
             >
               <CheckCheck className="w-3.5 h-3.5" />
               <span>
@@ -468,6 +485,117 @@ export function ConversationSidebar() {
                   }}
                 >
                   {syncConfirmTarget?.action === 'unsync' ? 'Confirm Unsync' : 'Confirm Sync'}
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal.Root>
+
+      {/* HeroUI Confirmation Modal for Batch Syncing */}
+      <Modal.Root
+        isOpen={isBatchSyncConfirmOpen}
+        onOpenChange={(open) => {
+          if (!open && !isBatchSyncing) setIsBatchSyncConfirmOpen(false);
+        }}
+      >
+        <Modal.Backdrop className="fixed inset-0 bg-black/65 backdrop-blur-xs z-50 transition-opacity flex items-center justify-center p-4">
+          <Modal.Container className="w-full max-w-md">
+            <Modal.Dialog className="w-full bg-white dark:bg-[#121212] rounded-3xl p-6 shadow-2xl border border-neutral-100 dark:border-neutral-800 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150">
+              {/* Modal Header */}
+              <Modal.Header className="flex items-center gap-3">
+                <div
+                  className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
+                    isZalo
+                      ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/60 text-blue-600 dark:text-blue-400'
+                      : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-600 dark:text-emerald-400'
+                  }`}
+                >
+                  <CheckCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <Modal.Heading className="text-base font-bold text-neutral-900 dark:text-white">
+                    Sync Multiple Conversations
+                  </Modal.Heading>
+                  <p className="text-xs text-neutral-400 dark:text-neutral-500">
+                    Enable real-time message sync for {selectedBatchIds.length} conversations
+                  </p>
+                </div>
+              </Modal.Header>
+
+              {/* Selected Conversations List Preview */}
+              <div className="rounded-2xl bg-neutral-50 dark:bg-[#18181b] border border-neutral-200/80 dark:border-neutral-800 p-3 flex flex-col gap-2">
+                <div className="flex items-center justify-between px-1 text-[11px] font-semibold text-neutral-500 dark:text-neutral-400">
+                  <span>Selected Conversations ({selectedBatchChats.length})</span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full border text-[10px] ${
+                      isZalo
+                        ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border-blue-200/60 dark:border-blue-800/60'
+                        : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-800/60'
+                    }`}
+                  >
+                    {isZalo ? 'Zalo' : 'WhatsApp'}
+                  </span>
+                </div>
+
+                <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin">
+                  {selectedBatchChats.map((c) => (
+                    <div
+                      key={c.id}
+                      className="flex items-center gap-2.5 p-2 rounded-xl bg-white dark:bg-[#121212] border border-neutral-100 dark:border-neutral-800/80 shadow-2xs"
+                    >
+                      <Avatar size="sm" className="w-8 h-8 rounded-xl ring-1 ring-neutral-200 dark:ring-neutral-700 shrink-0">
+                        <Avatar.Image src={c.avatar} alt={c.name} />
+                        <Avatar.Fallback className="text-xs font-bold bg-neutral-800 text-white">
+                          {c.name.slice(0, 2)}
+                        </Avatar.Fallback>
+                      </Avatar>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-neutral-900 dark:text-white truncate">
+                          {c.name}
+                        </p>
+                        <p className="text-[10px] text-neutral-500 dark:text-neutral-400 truncate">
+                          {c.phoneNumber
+                            ? `📞 ${c.phoneNumber}`
+                            : c.kind === 'group'
+                            ? `👥 Group • ${c.memberCount || 24} members`
+                            : c.account}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Informative Explanation */}
+              <Modal.Body className="text-xs text-neutral-600 dark:text-neutral-300 leading-relaxed py-0.5">
+                Are you sure you want to enable message synchronization for all{' '}
+                <strong className="text-neutral-900 dark:text-white font-semibold">
+                  {selectedBatchIds.length} selected conversations
+                </strong>
+                ? Incoming and historical customer messages will be safely forwarded to your connected CRM and spreadsheet destinations.
+              </Modal.Body>
+
+              <Modal.Footer className="flex items-center justify-end gap-2.5 pt-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  isDisabled={isBatchSyncing}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition cursor-pointer"
+                  onPress={() => setIsBatchSyncConfirmOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  isDisabled={isBatchSyncing}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold text-white shadow-xs transition cursor-pointer ${
+                    isZalo ? 'bg-blue-600 hover:bg-blue-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
+                  onPress={handleBatchSyncConfirm}
+                >
+                  {isBatchSyncing ? 'Syncing...' : `Confirm Sync (${selectedBatchIds.length})`}
                 </Button>
               </Modal.Footer>
             </Modal.Dialog>
