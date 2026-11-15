@@ -21,15 +21,15 @@ export interface SampleMessage {
   text: string;
 }
 
-export const allSheetColumns: { id: SheetColumn; labelEn: string; labelVi: string; desc: string }[] = [
-  { id: 'time', labelEn: 'Time (UTC+7)', labelVi: 'Thời gian (UTC+7)', desc: 'YYYY-MM-DD HH:mm Vietnam time' },
-  { id: 'network', labelEn: 'App Network', labelVi: 'Ứng dụng', desc: 'Zalo or WhatsApp' },
-  { id: 'chat', labelEn: 'Conversation / Chat', labelVi: 'Hội thoại', desc: 'Customer thread name' },
-  { id: 'direction', labelEn: 'Direction', labelVi: 'Gửi/nhận', desc: 'Inbound or Outbound' },
-  { id: 'sender', labelEn: 'Sender Name', labelVi: 'Người gửi', desc: 'Contact or sales rep' },
-  { id: 'phone', labelEn: 'Phone Number', labelVi: 'Điện thoại', desc: 'Customer phone if provided' },
-  { id: 'text', labelEn: 'Message Content', labelVi: 'Tin nhắn', desc: 'Transcribed text payload' },
-  { id: 'id', labelEn: 'Message ID', labelVi: 'Mã tin nhắn', desc: 'Unique audit trace UUID' },
+export const allSheetColumns: { id: SheetColumn; label: string; labelEn: string; desc: string }[] = [
+  { id: 'time', label: 'Time (UTC+7)', labelEn: 'Time (UTC+7)', desc: 'YYYY-MM-DD HH:mm timestamp' },
+  { id: 'network', label: 'App Network', labelEn: 'App Network', desc: 'Zalo or WhatsApp' },
+  { id: 'chat', label: 'Conversation / Chat', labelEn: 'Conversation / Chat', desc: 'Customer thread name' },
+  { id: 'direction', label: 'Direction', labelEn: 'Direction', desc: 'Inbound or Outbound' },
+  { id: 'sender', label: 'Sender Name', labelEn: 'Sender Name', desc: 'Contact or sales rep' },
+  { id: 'phone', label: 'Phone Number', labelEn: 'Phone Number', desc: 'Customer phone if provided' },
+  { id: 'text', label: 'Message Content', labelEn: 'Message Content', desc: 'Transcribed text payload' },
+  { id: 'id', label: 'Message ID', labelEn: 'Message ID', desc: 'Unique audit trace UUID' },
 ];
 
 export const sampleMessages: SampleMessage[] = [
@@ -41,7 +41,7 @@ export const sampleMessages: SampleMessage[] = [
     direction: 'inbound',
     sender: 'Lan',
     phone: '+84 912 345 678',
-    text: 'Chào anh Tuấn! Bên em đang duyệt ngân sách Q4 cho 200 nhân viên sales dùng phần mềm.',
+    text: 'Hello! Our team is currently reviewing the Q4 budget for 200 sales reps using the software.',
   },
   {
     id: 'msg-02',
@@ -51,7 +51,7 @@ export const sampleMessages: SampleMessage[] = [
     direction: 'outbound',
     sender: 'You (Sales Rep)',
     phone: '',
-    text: 'Chào Lan! Anh đã đính kèm bảng báo giá chiết khấu 15% kèm cam kết SLA 99.99% nhé.',
+    text: 'Hi Lan! I have attached the quotation with a 15% volume discount and 99.99% SLA commitment.',
   },
   {
     id: 'msg-03',
@@ -77,21 +77,21 @@ export const sampleMessages: SampleMessage[] = [
     id: 'msg-05',
     time: '2026-11-06T10:30:00+07:00',
     network: 'zalo',
-    chat: 'Tuấn Anh (Kế toán ABC)',
+    chat: 'David Miller (Finance)',
     direction: 'inbound',
-    sender: 'Tuấn Anh',
+    sender: 'David Miller',
     phone: '+84 988 123 456',
-    text: 'Bên mình đã làm lệnh ủy nhiệm chi thanh toán hợp đồng ChatBridge rồi nhé.',
+    text: 'We have processed the wire transfer payment for the ChatBridge enterprise license contract.',
   },
   {
     id: 'msg-06',
     time: '2026-11-06T10:45:00+07:00',
     network: 'zalo',
-    chat: 'Tuấn Anh (Kế toán ABC)',
+    chat: 'David Miller (Finance)',
     direction: 'outbound',
     sender: 'You (Sales Rep)',
     phone: '',
-    text: 'Dạ em cảm ơn anh! Hệ thống tự động kích hoạt tài khoản license vĩnh viễn cho team.',
+    text: 'Thank you so much! The system has automatically activated perpetual team licenses.',
   },
   {
     id: 'msg-07',
@@ -115,7 +115,7 @@ export interface ContactSummary {
 export const sampleContacts: ContactSummary[] = [
   { name: 'Lan (Rivera Apparel)', phone: '+84 912 345 678', network: 'Zalo', count: 2 },
   { name: 'Marcus Sterling', phone: '+1 555-019-2834', network: 'WhatsApp', count: 2 },
-  { name: 'Tuấn Anh (Kế toán ABC)', phone: '+84 988 123 456', network: 'Zalo', count: 2 },
+  { name: 'David Miller (Finance)', phone: '+84 988 123 456', network: 'Zalo', count: 2 },
   { name: 'Elena Rostova', phone: '+44 7700 900077', network: 'WhatsApp', count: 1 },
 ];
 
@@ -143,4 +143,3 @@ export function columnLetter(index: number): string {
   }
   return letters;
 }
-

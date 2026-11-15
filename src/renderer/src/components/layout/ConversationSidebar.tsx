@@ -17,6 +17,7 @@ import {
   useChatBridgeStore,
 } from '../../store/useChatBridgeStore.js';
 import { ChatListItem } from '../chat/ChatListItem.js';
+import { LogoText } from '../Logo.js';
 
 export function ConversationSidebar() {
   const sources = useChatBridgeStore((s) => s.sources);
@@ -26,6 +27,7 @@ export function ConversationSidebar() {
   const searchQuery = useChatBridgeStore((s) => s.searchQuery);
   const syncFilter = useChatBridgeStore((s) => s.syncFilter);
   const kindFilter = useChatBridgeStore((s) => s.kindFilter);
+  const isMobileChatOpen = useChatBridgeStore((s) => s.isMobileChatOpen);
 
   const setSelectedChatId = useChatBridgeStore((s) => s.setSelectedChatId);
   const setSearchQuery = useChatBridgeStore((s) => s.setSearchQuery);
@@ -132,14 +134,16 @@ export function ConversationSidebar() {
   };
 
   return (
-    <section className="w-[310px] md:w-[350px] lg:w-[370px] shrink-0 border-r border-neutral-200/80 dark:border-neutral-800 bg-[#fafcfb] dark:bg-[#0a0a0a] flex flex-col transition-colors duration-200">
+    <section className={`flex-1 md:flex-initial w-full md:w-[350px] lg:w-[370px] shrink-0 border-r border-neutral-200/80 dark:border-neutral-800 bg-[#fafcfb] dark:bg-[#0a0a0a] flex-col transition-colors duration-200 ${
+      isMobileChatOpen ? 'hidden md:flex' : 'flex'
+    }`}>
       {/* Top Header: Brand Wordmark "chatbridge" on top, App Name below */}
       <div className="px-5 pt-6 pb-2 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white font-sans flex items-center gap-1.5">
-            chatbridge
-          </h1>
-          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 capitalize mt-0.5">
+          <div className="flex items-center gap-1.5 h-7">
+            <LogoText className="h-6 w-auto" />
+          </div>
+          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 capitalize mt-1">
             {isZalo ? 'Zalo' : 'WhatsApp'}
             {currentRailAccount?.name ? ` • ${currentRailAccount.name}` : ''}
           </p>

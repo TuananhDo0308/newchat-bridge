@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@heroui/react';
-import { FileSpreadsheet, ArrowRight, Eye, Plus } from 'lucide-react';
+import { FileSpreadsheet, Eye, Plus, ExternalLink, Sun, Moon, Laptop, Globe, Check } from 'lucide-react';
 import zaloLogo from '../../assets/zalo-logo.png';
 import whatsappLogo from '../../assets/whatsapp-logo.png';
 import marginceLogo from '../../assets/margince-logo.svg';
@@ -11,6 +11,11 @@ import {
 } from '../../store/useAppStore.js';
 import { useChatBridgeStore } from '../../store/useChatBridgeStore.js';
 import { GoogleSheetsStudio } from './sheets/GoogleSheetsStudio.js';
+import { AddAccountModal } from '../wizard/AddAccountModal.js';
+import { UnlinkConfirmModal } from './UnlinkConfirmModal.js';
+import { UnlinkSheetsConfirmModal, UnlinkSheetsTarget } from './UnlinkSheetsConfirmModal.js';
+import { Step2DropNoisePreview } from '../wizard/Step2DropNoise.js';
+import { AmbientWavesBackground } from '../wizard/AmbientWavesBackground.js';
 import type { SheetColumn, SheetLayoutPreset } from './sheets/sheetsData.js';
 
 // SVG Icons for Navigation & Controls
@@ -101,13 +106,11 @@ function IconEyeOff(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-// 5 Active Settings Sections
+// 4 Active Settings Sections
 interface SectionItem {
   id: SettingsTab;
   title: string;
-  titleVi: string;
   subtitle: string;
-  subtitleVi: string;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   badge: (state: any) => string;
 }
@@ -116,38 +119,62 @@ const SETTINGS_SECTIONS: SectionItem[] = [
   {
     id: 'accounts',
     title: 'Accounts',
-    titleVi: 'Tài khoản kết nối',
     subtitle: 'Zalo, WhatsApp Business sessions and pairings',
-    subtitleVi: 'Phiên đăng nhập Zalo, WhatsApp và quét mã QR',
     icon: IconUsers,
     badge: (s) => `${s.sourcesCount} Connected`,
   },
   {
     id: 'delivery',
     title: 'Where to Send',
-    titleVi: 'Đích gửi dữ liệu',
     subtitle: 'Margince CRM webhook & Google Sheets output',
-    subtitleVi: 'Webhook Margince CRM và kết nối Google Sheets',
     icon: IconSend,
     badge: (s) => (s.crmActive ? '2 Targets Ready' : '1 Target Ready'),
   },
   {
     id: 'noise',
     title: 'Drop Noise',
-    titleVi: 'Bỏ tin nhiễu',
     subtitle: 'Rules for messages that should not be forwarded',
-    subtitleVi: 'Quy tắc lọc tin nhắn không cần thiết',
     icon: IconFilter,
     badge: (s) => `${s.activeDropCount} Rules Active`,
   },
   {
     id: 'preferences',
     title: 'Preferences',
-    titleVi: 'Tùy chọn & Giao diện',
-    subtitle: 'Language, dark mode, density, and sound notifications',
-    subtitleVi: 'Ngôn ngữ, giao diện dark mode, font và thông báo',
+    subtitle: 'Appearance and language configuration',
     icon: IconPalette,
-    badge: (s) => `${s.theme === 'dark' ? 'Dark' : 'Light'} • ${s.language.toUpperCase()}`,
+    badge: (s) => (s.theme === 'dark' ? 'Dark Mode' : s.theme === 'light' ? 'Light Mode' : 'System Theme'),
+  },
+];
+
+const DROP_NOISE_OPTIONS: {
+  key: 'reactions' | 'edits' | 'stickers' | 'stories';
+  label: string;
+  desc: string;
+  icon: string;
+}[] = [
+  {
+    key: 'reactions',
+    label: 'Emoji Reactions',
+    desc: 'Discard single emoji reactions (thumbs up, heart, smile)',
+    icon: '👍',
+  },
+  {
+    key: 'edits',
+    label: 'Message Edit History',
+    desc: 'Keep only final amended text to prevent duplicate records',
+    icon: '✏️',
+  },
+  {
+    key: 'stickers',
+    label: 'Animated Stickers',
+    desc: 'Drop visual stickers without contextual message text',
+    icon: '🎭',
+  },
+  {
+    key: 'stories',
+    label: 'Status & Story Replies',
+    desc: 'Ignore ephemeral 24h story reply chatter',
+    icon: '📱',
   },
 ];
 
@@ -156,11 +183,10 @@ export function SettingsScreen() {
   const settingsTab = useAppStore((s) => s.settingsTab);
   const setSettingsTab = useAppStore((s) => s.setSettingsTab);
   const openWizard = useAppStore((s) => s.openWizard);
+  const openAddAccountModal = useAppStore((s) => s.openAddAccountModal);
 
   const theme = useAppStore((s) => s.theme);
   const setTheme = useAppStore((s) => s.setTheme);
-  const language = useAppStore((s) => s.language);
-  const setLanguage = useAppStore((s) => s.setLanguage);
 
   const accentColor = useAppStore((s) => s.accentColor);
   const setAccentColor = useAppStore((s) => s.setAccentColor);
@@ -175,6 +201,7 @@ export function SettingsScreen() {
 
   const dropNoiseConfig = useAppStore((s) => s.dropNoiseConfig);
   const toggleDropNoiseRule = useAppStore((s) => s.toggleDropNoiseRule);
+  const setDropNoiseRules = useAppStore((s) => s.setDropNoiseRules);
   const setDropNoiseSensitivity = useAppStore((s) => s.setDropNoiseSensitivity);
 
   const marginceConfig = useAppStore((s) => s.marginceConfig);
@@ -183,6 +210,27 @@ export function SettingsScreen() {
   const updateSheetsConfig = useAppStore((s) => s.updateSheetsConfig);
 
   const sources = useChatBridgeStore((s) => s.sources);
+
+  // Connected accounts state with multi-step unlink confirmation
+  const [connectedAccounts, setConnectedAccounts] = useState({
+    zalo: {
+      connected: true,
+      name: 'Sale Personal',
+      phone: '+84 988 889 999',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=faces',
+    },
+    whatsapp: {
+      connected: true,
+      name: 'Sale Gradion',
+      phone: '+1 (555) 019-2834',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=faces',
+    },
+  });
+  const [unlinkTarget, setUnlinkTarget] = useState<'zalo' | 'whatsapp' | null>(null);
+  const [selectedLang, setSelectedLang] = useState<'en' | 'vi'>('en');
+
+  // Mobile responsive view state: 'menu' (shows aside list) or 'content' (shows active tab pane)
+  const [mobileView, setMobileView] = useState<'menu' | 'content'>('menu');
 
   // Local state for interactive verification
   const [showApiKey, setShowApiKey] = useState(false);
@@ -201,7 +249,7 @@ export function SettingsScreen() {
     isReadOnly: false,
   });
 
-  const [connectedSheets] = useState([
+  const [connectedSheets, setConnectedSheets] = useState([
     {
       id: '1C7719830219842189014',
       name: 'APAC_Client_Communications_Log',
@@ -227,8 +275,7 @@ export function SettingsScreen() {
       columns: ['time', 'chat', 'sender', 'phone', 'text'] as SheetColumn[],
     },
   ]);
-
-  const [newBlockedPhrase, setNewBlockedPhrase] = useState('');
+  const [unlinkSheetsTarget, setUnlinkSheetsTarget] = useState<UnlinkSheetsTarget | null>(null);
 
   // Keyboard shortcut: Esc to return to chats
   useEffect(() => {
@@ -241,18 +288,38 @@ export function SettingsScreen() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [closeSettings]);
 
-  const activeDropCount = Object.values(dropNoiseConfig).filter(
-    (v) => typeof v === 'boolean' && v
-  ).length;
+  const activeDropCount = [
+    dropNoiseConfig.reactions,
+    dropNoiseConfig.edits,
+    dropNoiseConfig.stickers,
+    dropNoiseConfig.stories,
+  ].filter(Boolean).length;
+
+  const handleSelectAllDropNoise = () => {
+    setDropNoiseRules({
+      reactions: true,
+      edits: true,
+      stickers: true,
+      stories: true,
+    });
+  };
+
+  const handleClearAllDropNoise = () => {
+    setDropNoiseRules({
+      reactions: false,
+      edits: false,
+      stickers: false,
+      stories: false,
+    });
+  };
 
   const currentSection = SETTINGS_SECTIONS.find((s) => s.id === settingsTab) || SETTINGS_SECTIONS[0];
 
   const badgeContext = {
-    sourcesCount: sources.filter((s) => s.network !== 'fake').length || 2,
+    sourcesCount: (connectedAccounts.zalo.connected ? 1 : 0) + (connectedAccounts.whatsapp.connected ? 1 : 0),
     crmActive: marginceConfig.enabled,
     activeDropCount,
     theme,
-    language,
   };
 
   const handleTestCrm = async () => {
@@ -273,13 +340,19 @@ export function SettingsScreen() {
     }, 900);
   };
 
-  const isVi = language === 'vi';
+  const handleOpenSheet = (sheetId: string) => {
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
+    if (window.bridge?.openExternal) {
+      window.bridge.openExternal(url);
+    } else {
+      window.open(url, '_blank', 'noreferrer');
+    }
+  };
 
   // Dedicated Full-Page Google Sheets Studio View
   if (showSheetsStudio || settingsTab === 'sheets') {
     return (
       <GoogleSheetsStudio
-        isVi={isVi}
         isReadOnly={studioConfig.isReadOnly}
         initialSheetName={studioConfig.sheetName}
         initialSheetId={studioConfig.sheetId}
@@ -301,7 +374,9 @@ export function SettingsScreen() {
       {/* ===================================================================== */}
       {/* LEFT COLUMN: FULL-PAGE SETTINGS NAVIGATION LIST (ASIDE)               */}
       {/* ===================================================================== */}
-      <aside className="w-72 md:w-80 shrink-0 border-r border-neutral-200/80 dark:border-neutral-800 bg-[#edf3f0]/50 dark:bg-[#0c0d0e] flex flex-col h-full min-h-0 transition-colors">
+      <aside className={`w-full md:w-80 shrink-0 border-r border-neutral-200/80 dark:border-neutral-800 bg-[#edf3f0]/50 dark:bg-[#0c0d0e] flex-col h-full min-h-0 transition-colors ${
+        mobileView === 'menu' ? 'flex' : 'hidden md:flex'
+      }`}>
         {/* Top Header with Back to Chats Button */}
         <div className="p-4 border-b border-neutral-200/80 dark:border-neutral-800 shrink-0 space-y-3">
           <button
@@ -310,7 +385,7 @@ export function SettingsScreen() {
           >
             <div className="flex items-center gap-2">
               <IconArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-              <span>{isVi ? 'Quay lại hội thoại' : 'Return to Chats'}</span>
+              <span>Return to Chats</span>
             </div>
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono rounded-md bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-400">
               Esc
@@ -319,10 +394,10 @@ export function SettingsScreen() {
 
           <div>
             <h2 className="text-sm font-bold text-neutral-900 dark:text-white tracking-tight">
-              {isVi ? 'Cài đặt hệ thống' : 'Settings & Preferences'}
+              Settings & Preferences
             </h2>
             <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
-              {isVi ? 'Cấu hình tài khoản, bộ lọc và tích hợp' : 'App configuration, accounts & integrations'}
+              App configuration, accounts & integrations
             </p>
           </div>
         </div>
@@ -337,7 +412,10 @@ export function SettingsScreen() {
             return (
               <button
                 key={sec.id}
-                onClick={() => setSettingsTab(sec.id)}
+                onClick={() => {
+                  setSettingsTab(sec.id);
+                  setMobileView('content');
+                }}
                 className={`w-full p-2.5 rounded-xl border transition-all text-left flex items-center justify-between gap-2.5 cursor-pointer select-none group ${
                   isActive
                     ? 'bg-white dark:bg-[#18181b] border-neutral-300 dark:border-neutral-700 shadow-xs ring-1 ring-black/5 dark:ring-white/10'
@@ -358,7 +436,7 @@ export function SettingsScreen() {
                     <strong className={`block text-xs font-semibold truncate ${
                       isActive ? 'text-neutral-900 dark:text-white' : 'text-neutral-700 dark:text-neutral-300'
                     }`}>
-                      {isVi ? sec.titleVi : sec.title}
+                      {sec.title}
                     </strong>
                     <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono block truncate">
                       {badgeText}
@@ -370,156 +448,219 @@ export function SettingsScreen() {
           })}
         </nav>
 
-        {/* Bottom Rail Engine Footer Status */}
-        <div className="p-3 border-t border-neutral-200/80 dark:border-neutral-800 shrink-0 flex items-center justify-between text-[11px] text-neutral-400">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-medium text-neutral-600 dark:text-neutral-400">Core Daemon 1.0.4</span>
-          </div>
-          <span className="font-mono text-[10px] text-neutral-400">Local IPC</span>
+        {/* Bottom Rail Version Footer */}
+        <div className="p-3.5 border-t border-neutral-200/80 dark:border-neutral-800 shrink-0 flex items-center text-[11px] text-neutral-400 font-mono">
+          <span className="text-neutral-500 dark:text-neutral-500">Version 1.0.4</span>
         </div>
       </aside>
 
       {/* ===================================================================== */}
       {/* RIGHT COLUMN: FULL-PAGE ACTIVE SECTION CONTENT PANE                   */}
       {/* ===================================================================== */}
-      <section className="flex-1 h-full min-h-0 flex flex-col bg-white dark:bg-[#111113] overflow-hidden">
+      <section className={`flex-1 h-full min-h-0 flex-col bg-white dark:bg-[#111113] overflow-hidden ${
+        mobileView === 'content' ? 'flex' : 'hidden md:flex'
+      }`}>
         {/* Section Top Header Bar */}
-        <header className="p-6 md:p-8 border-b border-neutral-100 dark:border-neutral-800/80 shrink-0 flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-800 dark:text-neutral-200 shrink-0">
-                <currentSection.icon className="w-4 h-4" />
-              </div>
-              <h2 className="text-xl font-bold text-neutral-900 dark:text-white tracking-tight truncate">
-                {isVi ? currentSection.titleVi : currentSection.title}
-              </h2>
-            </div>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1.5 leading-relaxed">
-              {isVi ? currentSection.subtitleVi : currentSection.subtitle}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              size="sm"
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition cursor-pointer"
-              onPress={closeSettings}
+        <header className="p-4 sm:p-6 md:p-8 border-b border-neutral-100 dark:border-neutral-800/80 shrink-0 flex items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+            {/* Mobile Back Button to Return to Settings Aside Menu */}
+            <button
+              type="button"
+              onClick={() => setMobileView('menu')}
+              className="md:hidden -ml-1 p-1.5 rounded-lg text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition cursor-pointer shrink-0"
+              title="Back to Settings Menu"
             >
-              {isVi ? 'Đóng & Lưu' : 'Done / Save'}
-            </Button>
+              <IconArrowLeft className="w-5 h-5" />
+            </button>
+
+            <div className="min-w-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-800 dark:text-neutral-200 shrink-0">
+                  <currentSection.icon className="w-4 h-4" />
+                </div>
+                <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white tracking-tight truncate">
+                  {currentSection.title}
+                </h2>
+              </div>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 sm:mt-1.5 leading-relaxed truncate sm:whitespace-normal">
+                {currentSection.subtitle}
+              </p>
+            </div>
           </div>
         </header>
 
         {/* Section Dynamic Body Content (Full Height Scrollable) */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 scrollbar-thin max-w-5xl">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 scrollbar-thin max-w-6xl">
           {/* =============================================================== */}
           {/* 1. ACCOUNTS SECTION                                             */}
           {/* =============================================================== */}
           {settingsTab === 'accounts' && (
             <div className="space-y-6 animate-in fade-in duration-200">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Zalo Card */}
-                <div className="p-5 rounded-2xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/30 dark:bg-blue-950/20 space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-white p-1 ring-1 ring-neutral-200 dark:ring-neutral-700 flex items-center justify-center shadow-xs">
-                        <img src={zaloLogo} alt="Zalo" className="w-full h-full object-cover rounded-lg" />
+                {/* Zalo Account Card */}
+                {connectedAccounts.zalo.connected ? (
+                  <div className="p-5 rounded-2xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/20 dark:bg-blue-950/20 space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div className="relative">
+                        <img
+                          src={connectedAccounts.zalo.avatar}
+                          alt={connectedAccounts.zalo.name}
+                          className="w-13 h-13 rounded-2xl object-cover ring-2 ring-blue-500/30 shadow-xs"
+                        />
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white p-0.5 shadow-xs">
+                          <img src={zaloLogo} alt="Zalo" className="w-full h-full object-cover rounded-full" />
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-bold text-sm text-neutral-900 dark:text-white">Zalo Personal</h4>
-                        <span className="text-[11px] font-mono text-blue-600 dark:text-blue-400">+84 988 889 999</span>
-                      </div>
+
+                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5 shadow-2xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>Connected</span>
+                      </span>
                     </div>
 
-                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>{isVi ? 'Đang kết nối' : 'Connected'}</span>
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
-                    {isVi
-                      ? 'Tài khoản bán hàng nội địa Zalo. Các tin nhắn direct và thỏa thuận giá tự động đồng bộ về máy này.'
-                      : 'Vietnam sales messenger account. Direct chats and customer quotes synchronize directly to this desktop.'}
-                  </p>
-
-                  <div className="flex items-center gap-2 pt-2 border-t border-blue-200/60 dark:border-blue-900/40">
-                    <Button
-                      size="sm"
-                      className="flex-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 text-xs font-semibold py-1.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                      onPress={() => {
-                        closeSettings();
-                        openWizard();
-                      }}
-                    >
-                      {isVi ? 'Quét lại QR' : 'Re-scan QR'}
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="px-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold py-1.5 rounded-xl border border-rose-500/20"
-                    >
-                      {isVi ? 'Hủy liên kết' : 'Unlink'}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* WhatsApp Card */}
-                <div className="p-5 rounded-2xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/30 dark:bg-emerald-950/20 space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-white p-1 ring-1 ring-neutral-200 dark:ring-neutral-700 flex items-center justify-center shadow-xs">
-                        <img src={whatsappLogo} alt="WhatsApp" className="w-full h-full object-cover rounded-lg" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-sm text-neutral-900 dark:text-white">WhatsApp Business</h4>
-                        <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400">+1 (555) 019-2834</span>
-                      </div>
+                    <div>
+                      <h4 className="font-bold text-base text-neutral-900 dark:text-white">
+                        {connectedAccounts.zalo.name}
+                      </h4>
+                      <p className="text-xs font-mono font-medium text-blue-600 dark:text-blue-400 mt-0.5">
+                        {connectedAccounts.zalo.phone}
+                      </p>
                     </div>
 
-                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>{isVi ? 'Đang kết nối' : 'Connected'}</span>
-                    </span>
+                    <div className="pt-2 border-t border-blue-200/60 dark:border-blue-900/40 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 dark:text-neutral-400">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span>Ready to sync</span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          className="px-3 py-1.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 text-xs font-semibold rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer"
+                          onPress={() => openAddAccountModal('zalo')}
+                        >
+                          Re-scan QR
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold rounded-xl border border-rose-500/20 cursor-pointer"
+                          onPress={() => setUnlinkTarget('zalo')}
+                        >
+                          Unlink
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
-                    {isVi
-                      ? 'Tài khoản khách hàng quốc tế. Hỗ trợ giao thức đa thiết bị Multi-Device Bridge mã hóa đầu cuối.'
-                      : 'International client communication profile. Operates through Multi-Device bridge protocol.'}
-                  </p>
-
-                  <div className="flex items-center gap-2 pt-2 border-t border-emerald-200/60 dark:border-emerald-900/40">
+                ) : (
+                  <div className="p-5 rounded-2xl border-2 border-dashed border-neutral-200 dark:border-neutral-800 bg-neutral-50/30 dark:bg-neutral-900/20 flex flex-col justify-between space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div className="w-12 h-12 rounded-xl bg-neutral-100 dark:bg-neutral-800 p-2 flex items-center justify-center opacity-60">
+                        <img src={zaloLogo} alt="Zalo" className="w-full h-full object-contain grayscale" />
+                      </div>
+                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-neutral-500/10 text-neutral-500 border border-neutral-500/20">
+                        Disconnected
+                      </span>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-neutral-800 dark:text-neutral-200">Zalo Personal</h4>
+                      <p className="text-xs text-neutral-400 mt-0.5">Session revoked. Pair QR to reconnect.</p>
+                    </div>
                     <Button
                       size="sm"
-                      className="flex-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 text-xs font-semibold py-1.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                      onPress={() => {
-                        closeSettings();
-                        openWizard();
-                      }}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-2 rounded-xl cursor-pointer"
+                      onPress={() => openAddAccountModal('zalo')}
                     >
-                      {isVi ? 'Quét lại QR' : 'Re-scan QR'}
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="px-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold py-1.5 rounded-xl border border-rose-500/20"
-                    >
-                      {isVi ? 'Hủy liên kết' : 'Unlink'}
+                      Connect Zalo
                     </Button>
                   </div>
-                </div>
+                )}
+
+                {/* WhatsApp Account Card */}
+                {connectedAccounts.whatsapp.connected ? (
+                  <div className="p-5 rounded-2xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/20 dark:bg-emerald-950/20 space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div className="relative">
+                        <img
+                          src={connectedAccounts.whatsapp.avatar}
+                          alt={connectedAccounts.whatsapp.name}
+                          className="w-13 h-13 rounded-2xl object-cover ring-2 ring-emerald-500/30 shadow-xs"
+                        />
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white p-0.5 shadow-xs">
+                          <img src={whatsappLogo} alt="WhatsApp" className="w-full h-full object-cover rounded-full" />
+                        </div>
+                      </div>
+
+                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5 shadow-2xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>Connected</span>
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="font-bold text-base text-neutral-900 dark:text-white">
+                        {connectedAccounts.whatsapp.name}
+                      </h4>
+                      <p className="text-xs font-mono font-medium text-emerald-600 dark:text-emerald-400 mt-0.5">
+                        {connectedAccounts.whatsapp.phone}
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-emerald-200/60 dark:border-emerald-900/40 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 dark:text-neutral-400">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span>Ready to sync</span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          className="px-3 py-1.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 text-xs font-semibold rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer"
+                          onPress={() => openAddAccountModal('whatsapp')}
+                        >
+                          Re-scan QR
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold rounded-xl border border-rose-500/20 cursor-pointer"
+                          onPress={() => setUnlinkTarget('whatsapp')}
+                        >
+                          Unlink
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-5 rounded-2xl border-2 border-dashed border-neutral-200 dark:border-neutral-800 bg-neutral-50/30 dark:bg-neutral-900/20 flex flex-col justify-between space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div className="w-12 h-12 rounded-xl bg-neutral-100 dark:bg-neutral-800 p-2 flex items-center justify-center opacity-60">
+                        <img src={whatsappLogo} alt="WhatsApp" className="w-full h-full object-contain grayscale" />
+                      </div>
+                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-neutral-500/10 text-neutral-500 border border-neutral-500/20">
+                        Disconnected
+                      </span>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-neutral-800 dark:text-neutral-200">WhatsApp Business</h4>
+                      <p className="text-xs text-neutral-400 mt-0.5">Session revoked. Pair QR to reconnect.</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2 rounded-xl cursor-pointer"
+                      onPress={() => openAddAccountModal('whatsapp')}
+                    >
+                      Connect WhatsApp
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {/* Add Additional Channel Button */}
               <button
-                onClick={() => {
-                  closeSettings();
-                  openWizard();
-                }}
+                onClick={() => openAddAccountModal()}
                 className="w-full p-4 rounded-2xl border-2 border-dashed border-neutral-300 dark:border-neutral-800 hover:border-neutral-800 dark:hover:border-neutral-500 flex items-center justify-center gap-2 text-xs font-semibold text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition cursor-pointer"
               >
                 <span>+</span>
-                <span>{isVi ? 'Thêm tài khoản hoặc kênh nhắn tin mới' : 'Link Additional Messaging Account'}</span>
+                <span>Link Additional Messaging Account</span>
               </button>
             </div>
           )}
@@ -669,30 +810,69 @@ export function SettingsScreen() {
                 {sheetsConfig.enabled && (
                   <div className="space-y-3.5 pt-3 border-t border-neutral-200/60 dark:border-neutral-800/80">
                     {/* Google OAuth Account Row */}
-                    <div className="p-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 ring-1 ring-neutral-200 dark:ring-neutral-700 flex items-center justify-center font-bold text-xs text-neutral-900 dark:text-white">
-                          G
+                    {sheetsConfig.oauthConnected !== false ? (
+                      <div className="p-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 ring-1 ring-neutral-200 dark:ring-neutral-700 flex items-center justify-center font-bold text-xs text-neutral-900 dark:text-white">
+                            G
+                          </div>
+                          <div className="text-xs font-semibold text-neutral-900 dark:text-white font-mono">
+                            {sheetsConfig.googleAccount || 'tuananh@gradion.ai'}
+                          </div>
                         </div>
-                        <div className="text-xs font-semibold text-neutral-900 dark:text-white font-mono">
-                          {sheetsConfig.googleAccount || 'tuananh@gradion.ai'}
+
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span>Connected</span>
+                          </span>
+                          <Button
+                            size="sm"
+                            className="px-3 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold rounded-xl border border-rose-500/20 cursor-pointer"
+                            onPress={() =>
+                              setUnlinkSheetsTarget({
+                                type: 'account',
+                                name: sheetsConfig.googleAccount || 'tuananh@gradion.ai',
+                              })
+                            }
+                          >
+                            Unlink
+                          </Button>
                         </div>
                       </div>
-
-                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span>Connected</span>
-                      </span>
-                    </div>
+                    ) : (
+                      <div className="p-3.5 rounded-xl border-2 border-dashed border-neutral-200 dark:border-neutral-800 bg-neutral-50/30 dark:bg-neutral-900/20 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center font-bold text-xs text-neutral-500">
+                            G
+                          </div>
+                          <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                            No Google Account linked
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl cursor-pointer"
+                          onPress={() =>
+                            updateSheetsConfig({
+                              oauthConnected: true,
+                              googleAccount: 'tuananh@gradion.ai',
+                            })
+                          }
+                        >
+                          Connect Google Account
+                        </Button>
+                      </div>
+                    )}
 
                     {/* Vertical list of Connected Sheet Files */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
-                          {isVi ? 'Danh sách bảng tính liên kết' : 'Connected Spreadsheet Links'}
+                          Connected Spreadsheet Links
                         </span>
                         <span className="text-[10px] font-mono text-neutral-400">
-                          {connectedSheets.length} {isVi ? 'bảng tính' : 'spreadsheets'}
+                          {connectedSheets.length} spreadsheets
                         </span>
                       </div>
 
@@ -702,44 +882,61 @@ export function SettingsScreen() {
                             key={file.id}
                             className="p-3 rounded-xl border border-neutral-200/90 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 flex items-center justify-between hover:border-neutral-300 dark:hover:border-neutral-700 transition gap-3"
                           >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                            <a
+                              href={`https://docs.google.com/spreadsheets/d/${file.id}/edit`}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleOpenSheet(file.id);
+                              }}
+                              className="flex items-center gap-3 min-w-0 flex-1 group/link cursor-pointer"
+                              title="Open in Google Sheets"
+                            >
+                              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 group-hover/link:bg-emerald-500/20 transition-colors">
                                 <FileSpreadsheet className="w-4 h-4" />
                               </div>
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2 truncate">
-                                  <span className="text-xs font-bold text-neutral-900 dark:text-white truncate">
-                                    {file.name}
-                                  </span>
-                                  <span className="text-[10px] font-mono text-neutral-400 shrink-0">
-                                    ({file.tab})
-                                  </span>
-                                </div>
-                                <div className="text-[10px] text-neutral-400 font-mono truncate flex items-center gap-2 mt-0.5">
-                                  <span>ID: {file.id.slice(0, 16)}...</span>
-                                  <span className="text-neutral-300 dark:text-neutral-700">•</span>
-                                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{file.status}</span>
-                                </div>
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="text-xs font-bold text-neutral-900 dark:text-white group-hover/link:text-emerald-600 dark:group-hover/link:text-emerald-400 group-hover/link:underline truncate">
+                                  {file.name}
+                                </span>
+                                <ExternalLink className="w-3.5 h-3.5 text-neutral-400 group-hover/link:text-emerald-500 shrink-0 transition-colors" />
                               </div>
-                            </div>
+                            </a>
 
-                            <Button
-                              size="sm"
-                              className="px-3 py-1.5 rounded-xl text-xs font-semibold text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 transition cursor-pointer flex items-center gap-1.5 shrink-0"
-                              onPress={() => {
-                                setStudioConfig({
-                                  isReadOnly: true,
-                                  sheetName: file.name,
-                                  sheetId: file.id,
-                                  preset: file.preset,
-                                  columns: file.columns,
-                                });
-                                setShowSheetsStudio(true);
-                              }}
-                            >
-                              <Eye className="w-3.5 h-3.5 text-neutral-500" />
-                              <span>{isVi ? 'Xem cấu hình' : 'View Config'}</span>
-                            </Button>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Button
+                                size="sm"
+                                className="px-3 py-1.5 rounded-xl text-xs font-semibold text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 transition cursor-pointer flex items-center gap-1.5"
+                                onPress={() => {
+                                  setStudioConfig({
+                                    isReadOnly: true,
+                                    sheetName: file.name,
+                                    sheetId: file.id,
+                                    preset: file.preset,
+                                    columns: file.columns,
+                                  });
+                                  setShowSheetsStudio(true);
+                                }}
+                              >
+                                <Eye className="w-3.5 h-3.5 text-neutral-500" />
+                                <span>View Config</span>
+                              </Button>
+
+                              <Button
+                                size="sm"
+                                className="px-2.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold rounded-xl border border-rose-500/20 transition cursor-pointer"
+                                onPress={() =>
+                                  setUnlinkSheetsTarget({
+                                    type: 'sheet',
+                                    name: file.name,
+                                    sheetId: file.id,
+                                  })
+                                }
+                              >
+                                Unlink
+                              </Button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -754,7 +951,7 @@ export function SettingsScreen() {
                         }}
                       >
                         <Plus className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>{isVi ? '+ Tạo liên kết bảng tính mới' : '+ Create New Sheet Link'}</span>
+                        <span>Create New Sheet Link</span>
                       </Button>
                     </div>
                   </div>
@@ -764,306 +961,302 @@ export function SettingsScreen() {
           )}
 
           {/* =============================================================== */}
-          {/* 4. DROP NOISE SECTION                                           */}
+          {/* 3. DROP NOISE SECTION (SPLIT: OPTIONS ON LEFT, PREVIEW ON RIGHT) */}
           {/* =============================================================== */}
           {settingsTab === 'noise' && (
-            <div className="space-y-6 animate-in fade-in duration-200">
-              {/* Sensitivity Selector */}
-              <div className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-[#161618] flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-bold text-neutral-900 dark:text-white">Filter Sensitivity</h4>
-                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                    Controls automated threshold for non-sales message stripping.
-                  </p>
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start animate-in fade-in duration-200">
+              {/* LEFT COLUMN: CONTROLS & SELECTION */}
+              <div className="space-y-4">
+                {/* Control bar: Title, counter, select all / clear */}
+                <div className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-[#161618] flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-neutral-900 dark:text-white">
+                      Filter Badges
+                    </span>
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                      {activeDropCount} of {DROP_NOISE_OPTIONS.length} Active
+                    </span>
+                  </div>
 
-                <div className="flex items-center gap-1.5">
-                  {(['relaxed', 'balanced', 'strict'] as const).map((mode) => (
+                  <div className="flex items-center gap-2 text-xs">
                     <button
-                      key={mode}
-                      onClick={() => setDropNoiseSensitivity(mode)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer capitalize ${
-                        dropNoiseConfig.sensitivity === mode
-                          ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-semibold shadow-xs'
-                          : 'bg-neutral-200/60 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-300 dark:hover:bg-neutral-700'
-                      }`}
+                      type="button"
+                      onClick={handleSelectAllDropNoise}
+                      className="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                     >
-                      {mode}
+                      Select All
                     </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 8 Rules Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {[
-                  { key: 'reactions' as const, label: 'Reactions', desc: 'Strip thumbs up, hearts, haha emoji reactions' },
-                  { key: 'edits' as const, label: 'Message Edits Audit', desc: 'Retain both original & revised edit history' },
-                  { key: 'stickers' as const, label: 'Animated Stickers', desc: 'Filter cartoon stickers and non-text graphics' },
-                  { key: 'stories' as const, label: 'Stories & Status', desc: 'Filter out story replies and status updates' },
-                  { key: 'botPings' as const, label: 'Bot System Pings', desc: 'Drop auto-acknowledgments and ping messages' },
-                  { key: 'otpCodes' as const, label: 'OTP & Auth Codes', desc: 'Strip sensitive 4-8 digit verification codes' },
-                  { key: 'largeFiles' as const, label: 'Large Attachments (>25MB)', desc: 'Exclude high-bandwidth media attachments' },
-                  { key: 'linkTrackers' as const, label: 'Link Trackers & Beacons', desc: 'Strip click trackers and promotional parameters' },
-                ].map((rule) => {
-                  const isActive = (dropNoiseConfig as any)[rule.key];
-                  return (
-                    <div
-                      key={rule.key}
-                      onClick={() => toggleDropNoiseRule(rule.key)}
-                      className={`p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 cursor-pointer select-none ${
-                        isActive
-                          ? 'bg-white dark:bg-[#18181b] border-neutral-300 dark:border-neutral-700 shadow-2xs'
-                          : 'bg-neutral-50/40 dark:bg-[#161618] border-neutral-200/80 dark:border-neutral-800 opacity-70 hover:opacity-100'
-                      }`}
+                    <span className="text-neutral-300 dark:text-neutral-700">•</span>
+                    <button
+                      type="button"
+                      onClick={handleClearAllDropNoise}
+                      className="font-medium text-neutral-500 hover:text-neutral-800 dark:hover:text-white cursor-pointer"
                     >
-                      <div className="min-w-0">
-                        <div className="font-bold text-xs text-neutral-900 dark:text-white flex items-center gap-1.5">
-                          {isActive && <IconCheck className="w-3.5 h-3.5 text-emerald-500 stroke-[3]" />}
-                          <span>{rule.label}</span>
-                        </div>
-                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
-                          {rule.desc}
-                        </p>
-                      </div>
+                      Clear
+                    </button>
+                  </div>
+                </div>
 
-                      <div
-                        className={`w-9 h-5 rounded-full transition-colors relative shrink-0 ${
-                          isActive ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-300 dark:bg-neutral-700'
+                {/* Horizontal YouTube-Style Pill Badges matching Wizard */}
+                <div className="flex flex-wrap gap-2">
+                  {DROP_NOISE_OPTIONS.map((badge) => {
+                    const isActive = dropNoiseConfig[badge.key];
+                    return (
+                      <button
+                        key={badge.key}
+                        type="button"
+                        onClick={() => toggleDropNoiseRule(badge.key)}
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all select-none cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95 ${
+                          isActive
+                            ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-semibold ring-1 ring-black/10 dark:ring-white/20'
+                            : 'bg-neutral-100 dark:bg-neutral-800/90 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 border border-neutral-200/90 dark:border-neutral-700/80'
                         }`}
                       >
-                        <span
-                          className={`w-4 h-4 rounded-full transition-transform absolute top-0.5 ${
-                            isActive ? 'left-4.5 bg-white dark:bg-neutral-900' : 'left-0.5 bg-white'
-                          }`}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+                        {isActive ? (
+                          <IconCheck className="w-3 h-3 stroke-[3]" />
+                        ) : (
+                          <span className="text-neutral-400 dark:text-neutral-500 font-bold leading-none">+</span>
+                        )}
+                        <span>{badge.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Blocked Phrase List */}
-              <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-[#161618] space-y-3">
-                <h4 className="text-xs font-bold text-neutral-900 dark:text-white">
-                  {isVi ? 'Từ khóa & Cụm từ chặn tùy chỉnh' : 'Custom Blocked Phrases & Keywords'}
-                </h4>
-                <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                  Messages containing these phrases will not be synced to CRM.
-                </p>
+              {/* RIGHT COLUMN: PREVIEW IDENTICAL TO WIZARD */}
+              <div className="relative bg-black rounded-3xl h-[440px] sm:h-[500px] md:h-[560px] flex flex-col overflow-hidden border border-neutral-200/80 dark:border-neutral-800 p-4 sm:p-6 select-none shadow-xl">
+                {/* Dynamic 60fps Ambient Waves Canvas Background */}
+                <AmbientWavesBackground
+                  paperColor="#000000"
+                  waveColors={['#ea580c', '#2563eb', '#10b981']}
+                />
 
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={newBlockedPhrase}
-                    onChange={(e) => setNewBlockedPhrase(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && newBlockedPhrase.trim()) {
-                        addBlockedPhrase(newBlockedPhrase);
-                        setNewBlockedPhrase('');
-                      }
-                    }}
-                    placeholder={isVi ? 'Nhập từ khóa và ấn Enter...' : 'Type keyword (e.g. promo, spam) and press Enter...'}
-                    className="flex-1 px-3.5 py-2 rounded-xl text-xs bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 focus:outline-none focus:ring-1 focus:ring-neutral-800 dark:focus:ring-white"
-                  />
-                  <Button
-                    size="sm"
-                    className="px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-neutral-900 dark:bg-white dark:text-neutral-900"
-                    onPress={() => {
-                      if (newBlockedPhrase.trim()) {
-                        addBlockedPhrase(newBlockedPhrase);
-                        setNewBlockedPhrase('');
-                      }
-                    }}
-                  >
-                    Add
-                  </Button>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {blockedPhrases.map((phrase) => (
-                    <span
-                      key={phrase}
-                      className="px-2.5 py-1 rounded-lg text-xs bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5 font-mono"
-                    >
-                      <span>{phrase}</span>
-                      <button
-                        onClick={() => removeBlockedPhrase(phrase)}
-                        className="text-neutral-400 hover:text-rose-500 text-xs cursor-pointer"
-                      >
-                        ✕
-                      </button>
-                    </span>
-                  ))}
-                </div>
+                {/* Live Interactive Preview */}
+                <Step2DropNoisePreview
+                  dropNoiseFilters={{
+                    reactions: dropNoiseConfig.reactions,
+                    edits: dropNoiseConfig.edits,
+                    stickers: dropNoiseConfig.stickers,
+                    stories: dropNoiseConfig.stories,
+                  }}
+                />
               </div>
             </div>
           )}
 
           {/* =============================================================== */}
-          {/* 5. PREFERENCES & UI CUSTOMIZATION                               */}
+          {/* 4. PREFERENCES & UI CUSTOMIZATION                               */}
           {/* =============================================================== */}
           {settingsTab === 'preferences' && (
-            <div className="space-y-6 animate-in fade-in duration-200">
-              {/* Appearance Mode (Dark mode active by default) */}
-              <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-[#161618] space-y-3">
-                <div>
-                  <h4 className="text-xs font-bold text-neutral-900 dark:text-white">Interface Theme Mode</h4>
-                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                    Default theme is set to Dark Mode as requested.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 pt-1">
-                  <button
-                    onClick={() => setTheme('dark')}
-                    className={`p-3.5 rounded-2xl border transition-all text-left flex items-center justify-between cursor-pointer ${
-                      theme === 'dark'
-                        ? 'bg-neutral-900 text-white border-neutral-900 shadow-md ring-2 ring-neutral-700'
-                        : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-800'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-5 h-5 rounded-full bg-neutral-950 border border-neutral-700 flex items-center justify-center text-[10px]">
-                        🌙
-                      </div>
-                      <span className="font-semibold text-xs">Dark Mode</span>
-                    </div>
-                    {theme === 'dark' && <IconCheck className="w-4 h-4 text-emerald-400" />}
-                  </button>
-
-                  <button
-                    onClick={() => setTheme('light')}
-                    className={`p-3.5 rounded-2xl border transition-all text-left flex items-center justify-between cursor-pointer ${
-                      theme === 'light'
-                        ? 'bg-white text-neutral-900 border-neutral-400 shadow-md ring-2 ring-neutral-300'
-                        : 'bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-800'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center text-[10px] text-white">
-                        ☀️
-                      </div>
-                      <span className="font-semibold text-xs">Light Mode</span>
-                    </div>
-                    {theme === 'light' && <IconCheck className="w-4 h-4 text-blue-600" />}
-                  </button>
-                </div>
+            <div className="space-y-6 animate-in fade-in duration-200 max-w-4xl">
+              {/* Top Heading matching reference */}
+              <div>
+                <h3 className="text-base font-bold text-neutral-900 dark:text-white tracking-tight">
+                  Appearance
+                </h3>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 leading-relaxed">
+                  Choose how Scylla looks on your screen. Supports automatic synchronization with your system settings.
+                </p>
               </div>
 
-              {/* Language Selection */}
-              <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-[#161618] flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-bold text-neutral-900 dark:text-white">
-                    {isVi ? 'Ngôn ngữ hiển thị' : 'Display Language'}
-                  </h4>
-                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                    English or Vietnamese UI translation.
-                  </p>
-                </div>
+              {/* 1. Interface Theme Card Block */}
+              <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#151618] overflow-hidden shadow-xs">
+                <div className="p-6 space-y-4">
+                  <div>
+                    <h4 className="text-lg font-bold text-neutral-900 dark:text-white tracking-tight">
+                      Interface Theme
+                    </h4>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                      Select your preferred visual theme for the Scylla interface.
+                    </p>
+                  </div>
 
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => setLanguage('en')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer ${
-                      language === 'en'
-                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-semibold shadow-xs'
-                        : 'bg-neutral-200/60 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
-                    }`}
-                  >
-                    English (US)
-                  </button>
-                  <button
-                    onClick={() => setLanguage('vi')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer ${
-                      language === 'vi'
-                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-semibold shadow-xs'
-                        : 'bg-neutral-200/60 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
-                    }`}
-                  >
-                    Tiếng Việt
-                  </button>
-                </div>
-              </div>
-
-              {/* Accent Color Palette */}
-              <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-[#161618] space-y-3">
-                <h4 className="text-xs font-bold text-neutral-900 dark:text-white">Accent Color Palette</h4>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  {[
-                    { id: 'orange' as AccentColor, label: 'ChatBridge Orange', color: 'bg-orange-500' },
-                    { id: 'emerald' as AccentColor, label: 'Emerald Mint', color: 'bg-emerald-500' },
-                    { id: 'blue' as AccentColor, label: 'Corporate Blue', color: 'bg-blue-600' },
-                    { id: 'violet' as AccentColor, label: 'Royal Violet', color: 'bg-purple-600' },
-                  ].map((acc) => (
+                  {/* 3 Theme Options */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
+                    {/* Light */}
                     <button
-                      key={acc.id}
-                      onClick={() => setAccentColor(acc.id)}
-                      className={`p-2.5 rounded-xl border transition flex items-center gap-2 cursor-pointer ${
-                        accentColor === acc.id
-                          ? 'border-neutral-800 dark:border-white bg-white dark:bg-neutral-800 shadow-xs'
-                          : 'border-neutral-200 dark:border-neutral-800 bg-neutral-100/50 dark:bg-neutral-900/50'
+                      type="button"
+                      onClick={() => setTheme('light')}
+                      className={`p-4 rounded-xl border text-left transition-all relative cursor-pointer select-none ${
+                        theme === 'light'
+                          ? 'border-2 border-orange-500 bg-orange-500/[0.04] dark:bg-orange-500/[0.06] shadow-xs'
+                          : 'border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/40 hover:border-neutral-300 dark:hover:border-neutral-700'
                       }`}
                     >
-                      <span className={`w-3.5 h-3.5 rounded-full ${acc.color}`} />
-                      <span className="text-xs font-medium truncate">{acc.label}</span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Sun className="w-4 h-4 text-neutral-700 dark:text-neutral-300" />
+                          <span className="font-semibold text-xs text-neutral-900 dark:text-white">Light</span>
+                        </div>
+                        {theme === 'light' && <Check className="w-4 h-4 text-orange-500 stroke-[2.5]" />}
+                      </div>
+                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 leading-snug">
+                        Crisp high-contrast layout
+                      </p>
                     </button>
-                  ))}
-                </div>
-              </div>
 
-              {/* Density Mode */}
-              <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-[#161618] flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-bold text-neutral-900 dark:text-white">Message Feed Density</h4>
-                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                    Adjust bubble spacing and padding.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  {(['compact', 'comfortable', 'spacious'] as const).map((d) => (
+                    {/* Dark */}
                     <button
-                      key={d}
-                      onClick={() => setDensity(d)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer capitalize ${
-                        density === d
-                          ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-semibold shadow-xs'
-                          : 'bg-neutral-200/60 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
+                      type="button"
+                      onClick={() => setTheme('dark')}
+                      className={`p-4 rounded-xl border text-left transition-all relative cursor-pointer select-none ${
+                        theme === 'dark'
+                          ? 'border-2 border-orange-500 bg-orange-500/[0.04] dark:bg-orange-500/[0.06] shadow-xs'
+                          : 'border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/40 hover:border-neutral-300 dark:hover:border-neutral-700'
                       }`}
                     >
-                      {d}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Moon className="w-4 h-4 text-neutral-700 dark:text-neutral-300" />
+                          <span className="font-semibold text-xs text-neutral-900 dark:text-white">Dark</span>
+                        </div>
+                        {theme === 'dark' && <Check className="w-4 h-4 text-orange-500 stroke-[2.5]" />}
+                      </div>
+                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 leading-snug">
+                        Easy on the eyes in low light
+                      </p>
                     </button>
-                  ))}
+
+                    {/* System */}
+                    <button
+                      type="button"
+                      onClick={() => setTheme('system')}
+                      className={`p-4 rounded-xl border text-left transition-all relative cursor-pointer select-none ${
+                        theme === 'system'
+                          ? 'border-2 border-orange-500 bg-orange-500/[0.04] dark:bg-orange-500/[0.06] shadow-xs'
+                          : 'border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/40 hover:border-neutral-300 dark:hover:border-neutral-700'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Laptop className="w-4 h-4 text-neutral-700 dark:text-neutral-300" />
+                          <span className="font-semibold text-xs text-neutral-900 dark:text-white">System</span>
+                        </div>
+                        {theme === 'system' && <Check className="w-4 h-4 text-orange-500 stroke-[2.5]" />}
+                      </div>
+                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 leading-snug">
+                        Matches your OS preference
+                      </p>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Footer Note */}
+                <div className="px-6 py-3.5 bg-neutral-50 dark:bg-[#111214] border-t border-neutral-100 dark:border-neutral-800/80">
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                    Theme applies immediately across all pages and components.
+                  </span>
                 </div>
               </div>
 
-              {/* Sound Notifications */}
-              <div className="p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-[#161618] flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-bold text-neutral-900 dark:text-white">Sound Alerts</h4>
-                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                    Play gentle chime when new transcripts are synchronized.
-                  </p>
+              {/* 2. Display Language Card Block (UI Only, No Logic) */}
+              <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#151618] overflow-hidden shadow-xs">
+                <div className="p-6 space-y-4">
+                  <div>
+                    <h4 className="text-lg font-bold text-neutral-900 dark:text-white tracking-tight">
+                      Display Language
+                    </h4>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                      Select your preferred language for the interface.
+                    </p>
+                  </div>
+
+                  {/* Language Options */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                    {/* English (US) */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedLang('en')}
+                      className={`p-4 rounded-xl border text-left transition-all relative cursor-pointer select-none ${
+                        selectedLang === 'en'
+                          ? 'border-2 border-orange-500 bg-orange-500/[0.04] dark:bg-orange-500/[0.06] shadow-xs'
+                          : 'border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/40 hover:border-neutral-300 dark:hover:border-neutral-700'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Globe className="w-4 h-4 text-neutral-700 dark:text-neutral-300" />
+                          <span className="font-semibold text-xs text-neutral-900 dark:text-white">English (US)</span>
+                        </div>
+                        {selectedLang === 'en' && <Check className="w-4 h-4 text-orange-500 stroke-[2.5]" />}
+                      </div>
+                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 leading-snug">
+                        Default international standard
+                      </p>
+                    </button>
+
+                    {/* Vietnamese */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedLang('vi')}
+                      className={`p-4 rounded-xl border text-left transition-all relative cursor-pointer select-none ${
+                        selectedLang === 'vi'
+                          ? 'border-2 border-orange-500 bg-orange-500/[0.04] dark:bg-orange-500/[0.06] shadow-xs'
+                          : 'border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/40 hover:border-neutral-300 dark:hover:border-neutral-700'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Globe className="w-4 h-4 text-neutral-700 dark:text-neutral-300" />
+                          <span className="font-semibold text-xs text-neutral-900 dark:text-white">Vietnamese</span>
+                        </div>
+                        {selectedLang === 'vi' && <Check className="w-4 h-4 text-orange-500 stroke-[2.5]" />}
+                      </div>
+                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 leading-snug">
+                        Tieng Viet localization pack
+                      </p>
+                    </button>
+                  </div>
                 </div>
 
-                <button
-                  onClick={() => setSoundNotifications(!soundNotifications)}
-                  className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                    soundNotifications ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-300 dark:bg-neutral-700'
-                  }`}
-                >
-                  <span
-                    className={`w-5 h-5 rounded-full transition-transform absolute top-0.5 ${
-                      soundNotifications ? 'left-5.5 bg-white dark:bg-neutral-900' : 'left-0.5 bg-white'
-                    }`}
-                  />
-                </button>
+                {/* Footer Note */}
+                <div className="px-6 py-3.5 bg-neutral-50 dark:bg-[#111214] border-t border-neutral-100 dark:border-neutral-800/80">
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                    Language updates labels, formatting, and date localization.
+                  </span>
+                </div>
               </div>
             </div>
           )}
         </div>
       </section>
+
+      {/* Multi-Step Security Authorization Unlink Modal */}
+      {unlinkTarget && (
+        <UnlinkConfirmModal
+          channel={unlinkTarget}
+          accountName={connectedAccounts[unlinkTarget].name}
+          phone={connectedAccounts[unlinkTarget].phone}
+          avatar={connectedAccounts[unlinkTarget].avatar}
+          onClose={() => setUnlinkTarget(null)}
+          onConfirm={() => {
+            setConnectedAccounts((prev) => ({
+              ...prev,
+              [unlinkTarget]: { ...prev[unlinkTarget], connected: false },
+            }));
+            setUnlinkTarget(null);
+          }}
+        />
+      )}
+
+      {/* Multi-Step Google Sheets Unlink Confirmation Modal */}
+      {unlinkSheetsTarget && (
+        <UnlinkSheetsConfirmModal
+          target={unlinkSheetsTarget}
+          onClose={() => setUnlinkSheetsTarget(null)}
+          onConfirm={() => {
+            if (unlinkSheetsTarget.type === 'account') {
+              updateSheetsConfig({ oauthConnected: false, googleAccount: '' });
+            } else if (unlinkSheetsTarget.type === 'sheet') {
+              setConnectedSheets((prev) =>
+                prev.filter((f) => f.id !== unlinkSheetsTarget.sheetId)
+              );
+            }
+            setUnlinkSheetsTarget(null);
+          }}
+        />
+      )}
     </div>
   );
 }

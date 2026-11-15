@@ -1,15 +1,15 @@
 # NewChat Bridge (Starter Setup)
 
-Dự án Desktop Chat Bridge được khởi tạo với kiến trúc **Best Practice** hiện đại nhất cho **macOS & Windows**.
+Desktop Chat Bridge project initialized with modern **Best Practices** for **macOS & Windows**.
 
 ---
 
-## 🛠 Tech Stack (Phiên bản mới nhất)
+## 🛠 Tech Stack (Latest Versions)
 
-| Tầng | Thư viện & Công nghệ | Phiên bản |
+| Layer | Library & Technology | Version |
 | :--- | :--- | :--- |
 | **Desktop Host** | **Electron** | `^45.3.2` |
-| **Kiến trúc Engine** | **`utilityProcess`** (Headless Node.js process) | Built-in |
+| **Engine Architecture** | **`utilityProcess`** (Headless Node.js process) | Built-in |
 | **UI Framework** | **React** & **React DOM** | `^19.3.1` |
 | **UI Component Kit** | **HeroUI** (`@heroui/react` & `@heroui/styles`) | `^3.2.7` |
 | **Styling** | **Tailwind CSS v4** + `@tailwindcss/vite` | `^4.3.5` |
@@ -20,12 +20,12 @@ Dự án Desktop Chat Bridge được khởi tạo với kiến trúc **Best Pra
 | **Local API** | **Fastify v5** (Loopback REST/SSE) | `^5.12.8` |
 | **Database** | **better-sqlite3-multiple-ciphers** + **Kysely** | `^13.1.1` / `^0.29.9` |
 | **Security** | **Electron safeStorage** (Apple Keychain & Windows DPAPI) | Built-in |
-| **Packaging** | **electron-builder** (DMG cho Mac, NSIS cho Win) | `^26.18.0` |
+| **Packaging** | **electron-builder** (DMG for Mac, NSIS for Win) | `^26.18.0` |
 | **Icons** | **Lucide React** | `^1.72.0` |
 
 ---
 
-## 📁 Cấu trúc thư mục
+## 📁 Directory Structure
 
 ```text
 newchat_bridge/
@@ -34,52 +34,51 @@ newchat_bridge/
 ├── vite.config.ts
 ├── electron-builder.json
 ├── scripts/
-│   ├── build.mjs            # Script build Main, Preload & Engine bằng esbuild
-│   └── dev.mjs              # Script khởi động đồng thời Vite và Electron
+│   ├── build.mjs            # Build script for Main, Preload & Engine using esbuild
+│   └── dev.mjs              # Concurrent dev runner for Vite and Electron
 └── src/
-    ├── shared/              # Types và interface dùng chung
+    ├── shared/              # Shared types and interfaces
     │   └── types.ts
-    ├── main/                # Tiến trình Electron chính (Window, Keystore, Tray)
+    ├── main/                # Main Electron process (Window, Keystore, Tray)
     │   ├── index.ts
     │   ├── keystore.ts      # safeStorage Keychain / DPAPI
-    │   └── engine-host.ts   # Quản lý vòng đời utilityProcess
-    ├── preload/             # Preload script bảo mật với contextBridge
+    │   └── engine-host.ts   # Lifecycle management for utilityProcess
+    ├── preload/             # Secure contextBridge preload script
     │   ├── index.ts
     │   └── index.d.ts
-    ├── engine/              # Tiến trình Engine Node.js chạy ngầm (utilityProcess)
+    ├── engine/              # Headless background Node.js Engine (utilityProcess)
     │   ├── index.ts
     │   ├── server.ts        # Fastify loopback server
-    │   └── db/              # SQLite mã hóa + Kysely ORM
+    │   └── db/              # Encrypted SQLite + Kysely ORM
     │       ├── index.ts
     │       └── schema.ts
-    └── renderer/            # Giao diện React 19 + HeroUI v3 + Tailwind v4
+    └── renderer/            # React 19 + HeroUI v3 + Tailwind v4 UI
         ├── index.html
         └── src/
-            ├── index.css    # Import Tailwind v4 & HeroUI styles
+            ├── index.css    # Tailwind v4 & HeroUI styles
             ├── main.tsx
-            ├── App.tsx      # Giao diện khởi tạo HeroUI
+            ├── App.tsx      # Main application UI entry
             └── store/       # Zustand store
                 └── useAppStore.ts
 ```
 
 ---
 
-## 🚀 Các lệnh phát triển
+## 🚀 Development Commands
 
 ```bash
-# 1. Kiểm tra Type TypeScript
+# 1. Typecheck TypeScript
 npm run typecheck
 
-# 2. Build toàn bộ dự án (UI + Main/Engine)
+# 2. Build full project (UI + Main/Engine)
 npm run build
 
-# 3. Chạy thử nghiệm giao diện trên trình duyệt web
+# 3. Preview UI in standard web browser
 npm run dev:ui
 
-# 4. Chạy toàn bộ ứng dụng Desktop (Vite + Electron)
+# 4. Run desktop application (Vite + Electron)
 npm run dev
 
-# 5. Đóng gói bộ cài đặt Desktop (.dmg cho macOS / .exe cho Windows)
+# 5. Package desktop installer (.dmg for macOS / .exe for Windows)
 npm run package
 ```
-

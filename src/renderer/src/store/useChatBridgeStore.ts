@@ -22,6 +22,7 @@ interface ChatBridgeState {
   // Selection & Filters
   scope: AccountScope | undefined;
   selectedChatId: string;
+  isMobileChatOpen: boolean;
   searchQuery: string;
   syncFilter: SyncFilterType;
   kindFilter: KindFilterType;
@@ -30,6 +31,8 @@ interface ChatBridgeState {
   // Setters
   setScope: (scope: AccountScope | undefined) => void;
   setSelectedChatId: (id: string) => void;
+  setIsMobileChatOpen: (open: boolean) => void;
+  closeMobileChat: () => void;
   setSearchQuery: (query: string) => void;
   setSyncFilter: (filter: SyncFilterType) => void;
   setKindFilter: (filter: KindFilterType) => void;
@@ -50,6 +53,7 @@ export const useChatBridgeStore = create<ChatBridgeState>((set, get) => ({
 
   scope: { network: 'zalo', account: 'zalo-sale-gradion' },
   selectedChatId: 'zalo-grad-david',
+  isMobileChatOpen: false,
   searchQuery: '',
   syncFilter: 'sync',
   kindFilter: 'all',
@@ -79,7 +83,9 @@ export const useChatBridgeStore = create<ChatBridgeState>((set, get) => ({
     }
   },
 
-  setSelectedChatId: (selectedChatId) => set({ selectedChatId }),
+  setSelectedChatId: (selectedChatId) => set({ selectedChatId, isMobileChatOpen: true }),
+  setIsMobileChatOpen: (isMobileChatOpen) => set({ isMobileChatOpen }),
+  closeMobileChat: () => set({ isMobileChatOpen: false }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
   setSyncFilter: (syncFilter) => set({ syncFilter }),
   setKindFilter: (kindFilter) => set({ kindFilter }),

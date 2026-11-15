@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'node:path';
 import { EngineHost } from './engine-host.js';
 import { KeyStore } from './keystore.js';
@@ -69,6 +69,13 @@ function createWindow(): void {
       nodeIntegration: false,
       sandbox: true,
     },
+  });
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https:') || url.startsWith('http:')) {
+      shell.openExternal(url);
+    }
+    return { action: 'deny' };
   });
 
   if (isDev) {
@@ -167,5 +174,17 @@ function setupIpcHandlers(): void {
 
   ipcMain.handle('bridge:keystore-status', () => {
     return { available: KeyStore.isAvailable() };
+  });
+
+  ipcMain.handle('bridge:open-external', async (_event, url: string) => {
+    try {
+      if (url.startsWith('https:') || url.startsWith('http:')) {
+        await shell.openExternal(url);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
   });
 }

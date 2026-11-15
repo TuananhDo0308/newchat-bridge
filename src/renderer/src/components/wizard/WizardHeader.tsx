@@ -8,6 +8,7 @@ interface WizardHeaderProps {
   hasConnectedAtLeastOne: boolean;
   hasBothAccounts: boolean;
   step3Channel: 'zalo' | 'whatsapp';
+  isConfiguringMargince?: boolean;
 }
 
 export function WizardHeader({
@@ -16,6 +17,7 @@ export function WizardHeader({
   hasConnectedAtLeastOne,
   hasBothAccounts,
   step3Channel,
+  isConfiguringMargince = false,
 }: WizardHeaderProps) {
   return (
     <div className="shrink-0 pb-2">
@@ -54,7 +56,8 @@ export function WizardHeader({
                 : 'Select WhatsApp Conversations'
               : `Select ${step3Channel === 'zalo' ? 'Zalo' : 'WhatsApp'} Conversations`)}
           {step === 4 && 'Select Sync History Range'}
-          {step === 5 && 'Choose Forwarding Destination'}
+          {step === 5 &&
+            (isConfiguringMargince ? 'Configure Margince CRM' : 'Choose Forwarding Destination')}
         </h2>
         <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 leading-relaxed">
           {step === 1 &&
@@ -72,7 +75,9 @@ export function WizardHeader({
           {step === 4 &&
             'Choose how far back to import customer conversation history into your CRM pipeline.'}
           {step === 5 &&
-            'Route synchronized leads and conversations to Margince CRM or Google Sheets.'}
+            (isConfiguringMargince
+              ? 'Enter your webhook endpoint URL and API secret token to forward deals and conversations.'
+              : 'Route synchronized leads and conversations to Margince CRM or Google Sheets.')}
         </p>
       </div>
     </div>

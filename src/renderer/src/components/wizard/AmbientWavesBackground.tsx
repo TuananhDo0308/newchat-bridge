@@ -154,8 +154,8 @@ function hexToRgb(hex: string): [number, number, number] {
 export interface AmbientWavesProps {
   className?: string;
   style?: React.CSSProperties;
-  paperColor?: string; // Hex color (mặc định: #000000 cho dark theme)
-  waveColors?: readonly [string, string, string] | [string, string, string]; // 3 màu hex
+  paperColor?: string; // Hex color (default: #000000 for dark theme)
+  waveColors?: readonly [string, string, string] | [string, string, string]; // 3 hex colors
 }
 
 // React.memo prevents re-rendering unless actual props change

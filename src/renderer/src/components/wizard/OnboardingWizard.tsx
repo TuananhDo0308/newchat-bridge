@@ -181,6 +181,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     margince: false,
     sheets: false,
   });
+  const [isConfiguringMargince, setIsConfiguringMargince] = useState(false);
+  const saveMarginceRef = React.useRef<(() => void) | null>(null);
 
   const hasConnectedDestination = Boolean(
     selectedDestinations.margince || selectedDestinations.sheets
@@ -208,7 +210,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         setStep(3);
       }
     } else if (step === 5) {
-      setStep(4);
+      if (isConfiguringMargince) {
+        setIsConfiguringMargince(false);
+      } else {
+        setStep(4);
+      }
     } else {
       setStep((s) => (s > 1 ? ((s - 1) as WizardStep) : s));
     }
@@ -231,31 +237,26 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 select-none bg-[#07080a] overflow-hidden animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-5 select-none bg-[#07080a] overflow-hidden animate-in fade-in duration-300">
       {/* Dedicated First-Run Ambient Lighting Backdrops */}
       <div className="absolute top-[-10%] left-[-10%] w-[520px] h-[520px] rounded-full bg-orange-600/12 blur-[130px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[640px] h-[640px] rounded-full bg-emerald-600/12 blur-[140px] pointer-events-none" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[550px] rounded-full bg-blue-600/8 blur-[160px] pointer-events-none" />
       <div className="absolute inset-0 bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
 
-      {/* Top subtle setup badge */}
-      <div className="absolute top-3 sm:top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] backdrop-blur-xl text-[11px] text-neutral-400 pointer-events-none">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-        <span className="font-medium tracking-wide">ChatBridge Core • Initial Setup</span>
-      </div>
-
       {/* 2-Column Responsive Split Modal Card */}
-      <div className="relative z-10 w-full max-w-5xl lg:max-w-6xl h-[680px] max-h-[94vh] bg-white dark:bg-[#111113] border border-neutral-200/90 dark:border-neutral-800 rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2 transition-all">
+      <div className="relative z-10 w-full max-w-5xl lg:max-w-6xl h-full sm:h-[680px] max-h-full sm:max-h-[94vh] bg-white dark:bg-[#111113] border-0 sm:border border-neutral-200/90 dark:border-neutral-800 rounded-none sm:rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2 transition-all">
         {/* =================================================================== */}
         {/* LEFT COLUMN: STEPS & CONTROLS                                       */}
         {/* =================================================================== */}
-        <div className="flex flex-col justify-between p-6 sm:p-7 overflow-y-auto relative min-h-0">
+        <div className="flex flex-col justify-between p-4 sm:p-7 overflow-y-auto relative min-h-0">
           <WizardHeader
             step={step}
-            isDark={theme === 'dark'}
+            isDark={theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)}
             hasConnectedAtLeastOne={hasConnectedAtLeastOne}
             hasBothAccounts={hasBothAccounts}
             step3Channel={step3Channel}
+            isConfiguringMargince={isConfiguringMargince}
           />
 
           {/* Dynamic Step Content Area */}
@@ -305,6 +306,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               <Step5Destinations
                 selectedDestinations={selectedDestinations}
                 onToggleDestination={toggleDestination}
+                isConfiguringMargince={isConfiguringMargince}
+                onOpenMarginceConfig={() => setIsConfiguringMargince(true)}
+                onCloseMarginceConfig={() => setIsConfiguringMargince(false)}
+                onRegisterSaveHandler={(fn) => {
+                  saveMarginceRef.current = fn;
+                }}
               />
             )}
           </div>
@@ -315,9 +322,15 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             hasBothAccounts={hasBothAccounts}
             step3Channel={step3Channel}
             hasConnectedDestination={hasConnectedDestination}
+            isConfiguringMargince={isConfiguringMargince}
             onBack={handleBack}
             onNext={handleNext}
             onFinish={handleFinishWizard}
+            onSaveMargince={() => {
+              if (saveMarginceRef.current) {
+                saveMarginceRef.current();
+              }
+            }}
           />
         </div>
 

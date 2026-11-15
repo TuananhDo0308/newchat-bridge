@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@heroui/react';
-import { IconArrowLeft, IconArrowRight } from './WizardIcons.js';
+import { IconArrowLeft, IconArrowRight, IconCheck } from './WizardIcons.js';
 import type { WizardStep } from './types.js';
 
 interface WizardFooterProps {
@@ -9,9 +9,11 @@ interface WizardFooterProps {
   hasBothAccounts: boolean;
   step3Channel: 'zalo' | 'whatsapp';
   hasConnectedDestination: boolean;
+  isConfiguringMargince?: boolean;
   onBack: () => void;
   onNext: () => void;
   onFinish: () => void;
+  onSaveMargince?: () => void;
 }
 
 export function WizardFooter({
@@ -20,9 +22,11 @@ export function WizardFooter({
   hasBothAccounts,
   step3Channel,
   hasConnectedDestination,
+  isConfiguringMargince = false,
   onBack,
   onNext,
   onFinish,
+  onSaveMargince,
 }: WizardFooterProps) {
   return (
     <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between shrink-0">
@@ -34,7 +38,7 @@ export function WizardFooter({
             onPress={onBack}
           >
             <IconArrowLeft className="w-3.5 h-3.5" />
-            <span>Back</span>
+            <span>{step === 5 && isConfiguringMargince ? 'Back to Destinations' : 'Back'}</span>
           </Button>
         )}
       </div>
@@ -95,7 +99,16 @@ export function WizardFooter({
         )}
 
         {step === 5 && (
-          hasConnectedDestination ? (
+          isConfiguringMargince ? (
+            <Button
+              size="sm"
+              className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+              onPress={onSaveMargince}
+            >
+              <IconCheck className="w-3.5 h-3.5 stroke-[3]" />
+              <span>Save & Connect</span>
+            </Button>
+          ) : hasConnectedDestination ? (
             <Button
               size="sm"
               className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 flex items-center gap-1.5 shadow-sm transition cursor-pointer"

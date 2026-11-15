@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Avatar, Button, Modal } from '@heroui/react';
-import { AlertTriangle, CheckCheck, Forward, Phone, Users } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CheckCheck, Forward, Phone, Users } from 'lucide-react';
 import zaloLogo from '../../assets/zalo-logo.png';
 import whatsappLogo from '../../assets/whatsapp-logo.png';
 import type { Chat } from '@shared/types.js';
+import { useChatBridgeStore } from '../../store/useChatBridgeStore.js';
 
 interface ChatHeaderProps {
   chat: Chat;
@@ -13,6 +14,7 @@ interface ChatHeaderProps {
 export function ChatHeader({ chat, onToggleSync }: ChatHeaderProps) {
   const isZalo = chat.network === 'zalo';
   const isGroup = chat.kind === 'group';
+  const closeMobileChat = useChatBridgeStore((s) => s.closeMobileChat);
 
   // HeroUI Confirmation Modal state for unsyncing
   const [isUnsyncConfirmOpen, setIsUnsyncConfirmOpen] = useState(false);
@@ -26,11 +28,21 @@ export function ChatHeader({ chat, onToggleSync }: ChatHeaderProps) {
   };
 
   return (
-    <header className="px-4 md:px-8 py-3.5 md:py-4 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between shrink-0 bg-white dark:bg-[#0a0a0a] transition-colors duration-200">
-      <div className="flex items-center gap-3.5 min-w-0">
+    <header className="px-3 sm:px-6 md:px-8 py-3 md:py-4 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between shrink-0 bg-white dark:bg-[#0a0a0a] transition-colors duration-200">
+      <div className="flex items-center gap-2 sm:gap-3.5 min-w-0">
+        {/* Mobile Back Button to Return to Conversation List */}
+        <button
+          type="button"
+          onClick={closeMobileChat}
+          className="md:hidden -ml-1 p-1.5 rounded-lg text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition cursor-pointer shrink-0"
+          title="Back to conversations"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+
         {/* Contact Avatar */}
         <div className="relative shrink-0">
-          <Avatar size="md" className="w-10 h-10 md:w-11 md:h-11 ring-2 ring-neutral-100 dark:ring-neutral-800">
+          <Avatar size="md" className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 ring-2 ring-neutral-100 dark:ring-neutral-800">
             <Avatar.Image src={chat.avatar} alt={chat.name} />
             <Avatar.Fallback>{chat.name.slice(0, 2)}</Avatar.Fallback>
           </Avatar>

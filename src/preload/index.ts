@@ -11,6 +11,7 @@ const bridgeApi: BridgeAPI = {
   connectSource: (network: Network) => ipcRenderer.invoke('bridge:connect-source', network),
   disconnectSource: (network: Network) => ipcRenderer.invoke('bridge:disconnect-source', network),
   sendMessage: (chatId: string, text: string) => ipcRenderer.invoke('bridge:send-message', chatId, text),
+  openExternal: (url: string) => ipcRenderer.invoke('bridge:open-external', url),
 };
 
 contextBridge.exposeInMainWorld('bridge', bridgeApi);

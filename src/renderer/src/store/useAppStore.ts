@@ -19,9 +19,10 @@ export type SettingsTab =
   | 'destinations'
   | 'system';
 
+export type ThemeMode = 'light' | 'dark' | 'system';
 export type AccentColor = 'orange' | 'emerald' | 'blue' | 'violet';
 export type DensityMode = 'compact' | 'comfortable' | 'spacious';
-export type AppLanguage = 'en' | 'vi';
+export type AppLanguage = 'en';
 export type HistoryRange = '3m' | '6m' | '12m' | 'all';
 
 export interface DropNoiseConfig {
@@ -61,9 +62,11 @@ export interface SheetsConfig {
 interface AppState {
   appVersion: string;
   isEngineReady: boolean;
-  theme: 'light' | 'dark';
+  theme: ThemeMode;
   language: AppLanguage;
   isWizardOpen: boolean;
+  isAddAccountModalOpen: boolean;
+  addAccountInitialChannel?: 'zalo' | 'whatsapp';
   isSettingsOpen: boolean;
   settingsTab: SettingsTab;
 
@@ -83,10 +86,12 @@ interface AppState {
   setAppVersion: (v: string) => void;
   setEngineReady: (ready: boolean) => void;
   toggleTheme: () => void;
-  setTheme: (theme: 'light' | 'dark') => void;
+  setTheme: (theme: ThemeMode) => void;
   setLanguage: (lang: AppLanguage) => void;
   openWizard: () => void;
   closeWizard: () => void;
+  openAddAccountModal: (channel?: 'zalo' | 'whatsapp') => void;
+  closeAddAccountModal: () => void;
   openSettings: (tab?: SettingsTab) => void;
   closeSettings: () => void;
   toggleSettings: (tab?: SettingsTab) => void;
@@ -101,24 +106,21 @@ interface AppState {
   removeBlockedPhrase: (phrase: string) => void;
 
   toggleDropNoiseRule: (rule: keyof Omit<DropNoiseConfig, 'sensitivity'>) => void;
+  setDropNoiseRules: (rules: Partial<DropNoiseConfig>) => void;
   setDropNoiseSensitivity: (sensitivity: 'relaxed' | 'balanced' | 'strict') => void;
   updateMarginceConfig: (cfg: Partial<MarginceConfig>) => void;
   updateSheetsConfig: (cfg: Partial<SheetsConfig>) => void;
 }
 
-const getInitialTheme = (): 'light' | 'dark' => {
+const getInitialTheme = (): ThemeMode => {
   if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('chatbridge_theme') as 'light' | 'dark';
-    if (saved === 'light' || saved === 'dark') return saved;
+    const saved = localStorage.getItem('chatbridge_theme') as ThemeMode;
+    if (saved === 'light' || saved === 'dark' || saved === 'system') return saved;
   }
   return 'dark';
 };
 
 const getSavedLanguage = (): AppLanguage => {
-  if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('chatbridge_language') as AppLanguage;
-    if (saved === 'en' || saved === 'vi') return saved;
-  }
   return 'en';
 };
 
@@ -190,7 +192,7 @@ const getSavedBlockedPhrases = (): string[] => {
       if (saved) return JSON.parse(saved);
     } catch {}
   }
-  return ['khuyen mai', 'quang cao', 'vay von', 'spam alert'];
+  return ['promo', 'discount', 'loan offer', 'spam alert'];
 };
 
 const normalizeTab = (tab: SettingsTab): SettingsTab => {
@@ -209,6 +211,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   language: getSavedLanguage(),
   // On every page reload, start wizard fresh from step 1
   isWizardOpen: true,
+  isAddAccountModalOpen: false,
+  addAccountInitialChannel: undefined,
   isSettingsOpen: false,
   settingsTab: 'accounts',
 
@@ -227,6 +231,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   setEngineReady: (isEngineReady) => set({ isEngineReady }),
   openWizard: () => set({ isWizardOpen: true }),
   closeWizard: () => set({ isWizardOpen: false }),
+  openAddAccountModal: (channel) => set({ isAddAccountModalOpen: true, addAccountInitialChannel: channel }),
+  closeAddAccountModal: () => set({ isAddAccountModalOpen: false, addAccountInitialChannel: undefined }),
 
   openSettings: (tab = 'accounts') => set({ isSettingsOpen: true, settingsTab: normalizeTab(tab) }),
   closeSettings: () => set({ isSettingsOpen: false }),
@@ -253,7 +259,12 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setTheme: (theme) => {
     localStorage.setItem('chatbridge_theme', theme);
-    if (theme === 'dark') {
+    const resolvedDark =
+      theme === 'dark' ||
+      (theme === 'system' &&
+        typeof window !== 'undefined' &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (resolvedDark) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
@@ -261,9 +272,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ theme });
   },
 
-  setLanguage: (language) => {
-    localStorage.setItem('chatbridge_language', language);
-    set({ language });
+  setLanguage: (language: AppLanguage = 'en') => {
+    localStorage.setItem('chatbridge_language', 'en');
+    set({ language: 'en' });
   },
 
   setAccentColor: (accentColor) => {
@@ -308,6 +319,12 @@ export const useAppStore = create<AppState>((set, get) => ({
       ...get().dropNoiseConfig,
       [rule]: !get().dropNoiseConfig[rule],
     };
+    localStorage.setItem('chatbridge_dropnoise', JSON.stringify(next));
+    set({ dropNoiseConfig: next });
+  },
+
+  setDropNoiseRules: (rules) => {
+    const next = { ...get().dropNoiseConfig, ...rules };
     localStorage.setItem('chatbridge_dropnoise', JSON.stringify(next));
     set({ dropNoiseConfig: next });
   },

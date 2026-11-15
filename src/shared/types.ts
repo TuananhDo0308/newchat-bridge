@@ -121,4 +121,5 @@ export interface BridgeAPI {
   disconnectSource: (network: Network) => Promise<{ success: boolean }>;
   sendMessage: (chatId: string, text: string) => Promise<Message>;
   getAppVersion: () => Promise<string>;
+  openExternal?: (url: string) => Promise<boolean>;
 }

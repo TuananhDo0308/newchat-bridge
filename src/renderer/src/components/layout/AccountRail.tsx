@@ -15,16 +15,20 @@ export function AccountRail() {
   const chats = useChatBridgeStore((s) => s.chats);
   const scope = useChatBridgeStore((s) => s.scope);
   const setScope = useChatBridgeStore((s) => s.setScope);
+  const isMobileChatOpen = useChatBridgeStore((s) => s.isMobileChatOpen);
 
   const openSettings = useAppStore((s) => s.openSettings);
   const closeSettings = useAppStore((s) => s.closeSettings);
   const toggleSettings = useAppStore((s) => s.toggleSettings);
   const isSettingsOpen = useAppStore((s) => s.isSettingsOpen);
+  const openAddAccountModal = useAppStore((s) => s.openAddAccountModal);
 
   const railList = useMemo(() => selectRailAccounts(sources, chats), [sources, chats]);
 
   return (
-    <aside className="drag-region w-[70px] md:w-[78px] shrink-0 border-r border-neutral-200/80 dark:border-neutral-800 bg-[#edf3f0] dark:bg-[#0a0a0a] flex flex-col items-center justify-between py-6 transition-colors duration-200">
+    <aside className={`drag-region w-14 sm:w-[70px] md:w-[78px] shrink-0 border-r border-neutral-200/80 dark:border-neutral-800 bg-[#edf3f0] dark:bg-[#0a0a0a] flex-col items-center justify-between py-4 sm:py-6 transition-colors duration-200 ${
+      (isMobileChatOpen || isSettingsOpen) ? 'hidden md:flex' : 'flex'
+    }`}>
       <div className="no-drag flex flex-col items-center gap-4 w-full">
         {/* Brand Logo - Completely static without hover scaling */}
         <Tooltip>
@@ -37,8 +41,7 @@ export function AccountRail() {
               className="w-11 h-11 cursor-pointer flex items-center justify-center"
             >
               <LogoIcon
-                className="w-full h-full"
-                withShadow={true}
+                className="w-9 h-9"
               />
             </div>
           </Tooltip.Trigger>
@@ -125,11 +128,11 @@ export function AccountRail() {
             );
           })}
 
-          {/* Add Account (+) Button -> Opens Accounts Setting */}
+          {/* Add Account (+) Button -> Opens Add Account Modal */}
           <Tooltip>
             <Tooltip.Trigger>
               <button
-                onClick={() => openSettings('accounts')}
+                onClick={() => openAddAccountModal()}
                 className="w-11 h-11 rounded-2xl border-2 border-dashed border-neutral-300 dark:border-neutral-800 hover:border-neutral-800 dark:hover:border-neutral-500 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white flex items-center justify-center transition-all hover:bg-white/60 dark:hover:bg-neutral-900/60 cursor-pointer"
               >
                 <Plus className="w-5 h-5" />
@@ -139,7 +142,7 @@ export function AccountRail() {
               placement="right"
               className="py-1 px-2.5 rounded-lg bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 text-xs shadow-md border border-neutral-200/80 dark:border-neutral-800 font-semibold"
             >
-              Manage Channels & Accounts
+              Add Messaging Account
             </Tooltip.Content>
           </Tooltip>
         </div>

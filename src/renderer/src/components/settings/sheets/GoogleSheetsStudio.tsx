@@ -17,7 +17,6 @@ import {
   X,
   ChevronDown,
   Table,
-  Save,
   Eye,
 } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore.js';
@@ -31,7 +30,7 @@ import {
 } from './sheetsData.js';
 
 /**
- * Authentic miniature spreadsheet illustration from chat_bridge.
+ * Authentic miniature spreadsheet illustration.
  * Renders spreadsheet grid lines and the bottom tab pills for each strategy.
  */
 function LayoutThumb({ preset }: { preset: SheetLayoutPreset }) {
@@ -45,12 +44,12 @@ function LayoutThumb({ preset }: { preset: SheetLayoutPreset }) {
       : preset === 'network'
       ? ['Zalo', 'WhatsApp']
       : preset === 'contact'
-      ? ['Lan', 'Marcus', 'Tuấn']
+      ? ['Lan', 'Marcus', 'David']
       : ['Zalo - 2026-11'];
 
   return (
     <div className="w-full rounded-xl border border-neutral-200 dark:border-neutral-700/80 bg-white dark:bg-[#111113] overflow-hidden shadow-2xs select-none pointer-events-none">
-      {/* Top Spreadsheet Grid Lines (authentic chat_bridge thumbGrid) */}
+      {/* Top Spreadsheet Grid Lines */}
       <div className="h-12 p-2 bg-neutral-50/70 dark:bg-neutral-900/40 flex flex-col justify-between">
         <div className="flex gap-1.5 opacity-60">
           <div className="h-1.5 w-7 rounded-xs bg-neutral-300 dark:bg-neutral-700" />
@@ -72,7 +71,7 @@ function LayoutThumb({ preset }: { preset: SheetLayoutPreset }) {
         </div>
       </div>
 
-      {/* Bottom Tabs Bar (authentic chat_bridge thumbTabs) */}
+      {/* Bottom Tabs Bar */}
       <div className="flex items-center gap-1 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-100/90 dark:bg-[#18181b] px-2 py-1 overflow-x-hidden">
         {tabs.map((tab, idx) => (
           <span
@@ -92,7 +91,6 @@ function LayoutThumb({ preset }: { preset: SheetLayoutPreset }) {
 }
 
 interface GoogleSheetsStudioProps {
-  isVi?: boolean;
   isReadOnly?: boolean;
   initialSheetName?: string;
   initialSheetId?: string;
@@ -102,7 +100,6 @@ interface GoogleSheetsStudioProps {
 }
 
 export function GoogleSheetsStudio({
-  isVi = false,
   isReadOnly = false,
   initialSheetName,
   initialSheetId,
@@ -118,35 +115,37 @@ export function GoogleSheetsStudio({
 
   // Layout Configuration State
   const [preset, setPreset] = useState<SheetLayoutPreset>(initialPreset || sheetsConfig.preset || 'single');
-  const [includeContactsTab, setIncludeContactsTab] = useState(sheetsConfig.includeContactsTab ?? true);
+  const [includeContactsTab, setIncludeContactsTab] = useState(
+    sheetsConfig.includeContactsTab ?? true
+  );
   const [columns, setColumns] = useState<SheetColumn[]>(
-    initialColumns || sheetsConfig.columns || ['time', 'network', 'chat', 'sender', 'direction', 'text']
+    initialColumns || sheetsConfig.columns || ['time', 'network', 'chat', 'direction', 'sender', 'text']
   );
 
-  // Active Tab in the live spreadsheet preview
-  const [activePreviewTab, setActivePreviewTab] = useState<string>('messages');
-
-  // Drag and drop state
-  const draggedColRef = useRef<SheetColumn | null>(null);
-  const [dragOverCol, setDragOverCol] = useState<{ target: SheetColumn | null; side: 'before' | 'after' } | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-
-  // Spreadsheet connection state
-  const [spreadsheetId, setSpreadsheetId] = useState(initialSheetId || sheetsConfig.spreadsheetId);
+  // File identification state
   const [selectedFileName, setSelectedFileName] = useState(
     initialSheetName || sheetsConfig.selectedFileName || 'ChatBridge_Transcripts_2026'
   );
+  const [spreadsheetId, setSpreadsheetId] = useState(
+    initialSheetId || sheetsConfig.spreadsheetId || '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms'
+  );
+
+  // UI interaction states
+  const [activePreviewTab, setActivePreviewTab] = useState<string>('messages');
+  const [dragOverCol, setDragOverCol] = useState<{ target: SheetColumn; side: 'before' | 'after' } | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const draggedColRef = useRef<SheetColumn | null>(null);
 
   // Autocomplete state
   const [sheetSearchQuery, setSheetSearchQuery] = useState('');
 
   // Drive sheets mock list
   const driveSheetsList = useMemo(() => [
-    { name: 'ChatBridge_Transcripts_2026', id: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms', modified: 'Vừa xong' },
-    { name: 'Q4_Enterprise_Sales_Pipeline', id: '1A98BCx2309kLMNz8943184', modified: 'Hôm qua' },
-    { name: 'APAC_Client_Communications_Log', id: '1C7719830219842189014', modified: '3 ngày trước' },
-    { name: 'Daily_Orders_Gradion_Log', id: '1D4421980018471209823', modified: '1 tuần trước' },
-    { name: 'Customer_Directory_Master', id: '1E8831092837401928341', modified: '2 tuần trước' },
+    { name: 'ChatBridge_Transcripts_2026', id: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms', modified: 'Just now' },
+    { name: 'Q4_Enterprise_Sales_Pipeline', id: '1A98BCx2309kLMNz8943184', modified: 'Yesterday' },
+    { name: 'APAC_Client_Communications_Log', id: '1C7719830219842189014', modified: '3 days ago' },
+    { name: 'Daily_Orders_Gradion_Log', id: '1D4421980018471209823', modified: '1 week ago' },
+    { name: 'Customer_Directory_Master', id: '1E8831092837401928341', modified: '2 weeks ago' },
   ], []);
 
   // Filtered sheets based on search query
@@ -190,35 +189,22 @@ export function GoogleSheetsStudio({
     [columns]
   );
 
-  // Drag Handlers
+  // Drag-and-drop operations
   const handleDragStart = (e: React.DragEvent, col: SheetColumn) => {
     draggedColRef.current = col;
     e.dataTransfer.setData('text/plain', col);
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragOver = (e: React.DragEvent, target: SheetColumn | null) => {
+  const handleDragOver = (e: React.DragEvent, target: SheetColumn) => {
     e.preventDefault();
-    if (!draggedColRef.current) return;
-    if (target === draggedColRef.current) {
-      setDragOverCol(null);
-      return;
-    }
+    e.dataTransfer.dropEffect = 'move';
     const rect = e.currentTarget.getBoundingClientRect();
-    const side = target
-      ? e.clientX < rect.left + rect.width / 2
-        ? 'before'
-        : 'after'
-      : 'after';
+    const midX = rect.left + rect.width / 2;
+    const side: 'before' | 'after' = e.clientX < midX ? 'before' : 'after';
 
     if (dragOverCol?.target !== target || dragOverCol.side !== side) {
       setDragOverCol({ target, side });
-    }
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
-      setDragOverCol(null);
     }
   };
 
@@ -274,7 +260,7 @@ export function GoogleSheetsStudio({
   const previewTabList = useMemo(() => {
     const list: { id: string; label: string }[] = [];
     if (preset === 'single') {
-      list.push({ id: 'messages', label: isVi ? 'Tin nhắn' : 'Messages' });
+      list.push({ id: 'messages', label: 'Messages' });
     } else if (preset === 'daily') {
       list.push(
         { id: '2026-10-30', label: '2026-10-30' },
@@ -289,7 +275,7 @@ export function GoogleSheetsStudio({
       list.push(
         { id: 'lan', label: 'Lan' },
         { id: 'marcus', label: 'Marcus' },
-        { id: 'tuan', label: 'Tuấn' },
+        { id: 'david', label: 'David' },
         { id: 'elena', label: 'Elena' }
       );
     } else {
@@ -297,78 +283,75 @@ export function GoogleSheetsStudio({
     }
 
     if (includeContactsTab) {
-      list.push({ id: 'contacts', label: isVi ? 'Danh bạ tổng hợp' : 'Contacts Directory' });
+      list.push({ id: 'contacts', label: 'Contacts Directory' });
     }
 
     return list;
-  }, [preset, includeContactsTab, isVi]);
+  }, [preset, includeContactsTab]);
 
   const currentTab = activePreviewTab || previewTabList[0]?.id || 'messages';
 
   const STEPS = [
-    { step: 1 as const, titleEn: '1. Destination Sheet', titleVi: '1. Bảng tính đích' },
-    { step: 2 as const, titleEn: '2. Tabs Strategy', titleVi: '2. Chia sheet tab' },
-    { step: 3 as const, titleEn: '3. Table Workbench', titleVi: '3. Kéo thả cột & Bảng' },
+    { step: 1 as const, title: '1. Destination Sheet' },
+    { step: 2 as const, title: '2. Tabs Strategy' },
+    { step: 3 as const, title: '3. Table Workbench' },
   ];
 
   return (
     <div className="flex-1 h-full min-h-0 flex flex-col overflow-hidden bg-[#f7faf8] dark:bg-black text-neutral-900 dark:text-neutral-100 select-none animate-in fade-in duration-200">
       {/* Top Header Bar with Return to Settings */}
-      <header className="p-4 md:px-8 md:py-3.5 border-b border-neutral-200/80 dark:border-neutral-800 bg-white/90 dark:bg-[#0c0d0e]/90 backdrop-blur-md shrink-0 flex items-center justify-between gap-4 z-20">
-        <div className="flex items-center gap-3">
+      <header className="px-3 sm:px-6 md:px-8 py-3 md:py-3.5 border-b border-neutral-200/80 dark:border-neutral-800 bg-white/90 dark:bg-[#0c0d0e]/90 backdrop-blur-md shrink-0 flex items-center justify-between gap-2 sm:gap-4 z-20">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {onClose && (
             <button
               type="button"
               onClick={onClose}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800/80 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition cursor-pointer group"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800/80 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition cursor-pointer group shrink-0"
             >
               <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
-              <span>{isVi ? 'Quay lại Cài đặt' : 'Back to Settings'}</span>
-              <kbd className="text-[10px] px-1 py-0.2 rounded bg-white dark:bg-neutral-900 text-neutral-400 border border-neutral-200 dark:border-neutral-700 font-mono">
+              <span className="hidden sm:inline">Back to Settings</span>
+              <span className="sm:hidden">Back</span>
+              <kbd className="hidden md:inline-block text-[10px] px-1 py-0.2 rounded bg-white dark:bg-neutral-900 text-neutral-400 border border-neutral-200 dark:border-neutral-700 font-mono">
                 Esc
               </kbd>
             </button>
           )}
 
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
               <FileSpreadsheet className="w-4 h-4" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm font-bold text-neutral-900 dark:text-white">
-                  Google Sheets Format & Layout Studio
-                </h1>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                  Pro UI
-                </span>
-              </div>
+            <div className="min-w-0">
+              <h1 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white truncate">
+                Google Sheets Studio
+              </h1>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {isReadOnly ? (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-semibold">
+            <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-semibold">
               <Eye className="w-3.5 h-3.5" />
-              <span>{isVi ? 'Chế độ chỉ xem' : 'Read-only mode'}</span>
+              <span className="hidden sm:inline">Read-only mode</span>
+              <span className="sm:hidden">Read-only</span>
             </div>
           ) : (
             <Button
               size="sm"
-              className="px-4 py-1.5 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 flex items-center gap-1.5 shadow-xs cursor-pointer"
+              className="px-3 sm:px-4 py-1.5 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 flex items-center gap-1.5 shadow-xs cursor-pointer"
               onPress={handleSaveLayout}
             >
               <Check className="w-3.5 h-3.5" />
-              <span>{saveSuccess ? (isVi ? 'Đã lưu bố cục!' : 'Layout Saved!') : (isVi ? 'Lưu bố cục' : 'Save Layout')}</span>
+              <span>{saveSuccess ? 'Saved!' : 'Save Layout'}</span>
             </Button>
           )}
         </div>
       </header>
 
       {/* Main Scrollable Studio View */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-8">
-        <div className="max-w-5xl mx-auto space-y-6">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-6 md:p-8">
+        <div className="max-w-7xl mx-auto space-y-6">
           {/* Segmented Progress Bar: 3 Clean Steps */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -404,7 +387,7 @@ export function GoogleSheetsStudio({
                       : 'text-neutral-400 dark:text-neutral-500'
                   }`}
                 >
-                  {isVi ? item.titleVi : item.titleEn}
+                  {item.title}
                 </button>
               ))}
             </div>
@@ -413,14 +396,14 @@ export function GoogleSheetsStudio({
           {/* Step Heading and Subtitle */}
           <div className="pb-1">
             <h2 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-white">
-              {activeStep === 1 && (isVi ? 'Chọn hoặc tạo bảng tính Google Sheets' : 'Google Spreadsheet Destination')}
-              {activeStep === 2 && (isVi ? 'Chiến lược phân chia worksheet tab' : 'Spreadsheet Tabs Partitioning Strategy')}
-              {activeStep === 3 && (isVi ? 'Kéo thả cột & xem trước bảng tính trực tiếp' : 'Table Workbench & Live Spreadsheet Preview')}
+              {activeStep === 1 && 'Google Spreadsheet Destination'}
+              {activeStep === 2 && 'Spreadsheet Tabs Partitioning Strategy'}
+              {activeStep === 3 && 'Table Workbench & Live Spreadsheet Preview'}
             </h2>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 leading-relaxed">
-              {activeStep === 1 && (isVi ? 'Tìm kiếm bảng tính trên Google Drive hoặc nhập tên để tạo mới ngay lập tức.' : 'Search existing Google Drive sheets or type a new name to create one directly with Pro UI Autocomplete.')}
-              {activeStep === 2 && (isVi ? 'Chọn cách tổ chức các tab: Một bảng duy nhất, theo ngày, theo tháng hoặc theo từng ứng dụng.' : 'Choose how transcripts are split across tabs: Single, Daily, Monthly, or by App Network.')}
-              {activeStep === 3 && (isVi ? 'Kéo thả các cột trực tiếp trong thanh tiêu đề của bảng để đổi thứ tự hoặc bấm × để xóa cột.' : 'Drag-and-drop columns directly in the table header to reorder fields, or click × to remove.')}
+              {activeStep === 1 && 'Search existing Google Drive sheets or type a new name to create a new sheet destination.'}
+              {activeStep === 2 && 'Choose how transcripts are split across tabs: Single, Daily, Monthly, or by App Network.'}
+              {activeStep === 3 && 'Drag-and-drop columns directly in the table header to reorder fields, or click remove button.'}
             </p>
           </div>
 
@@ -429,21 +412,30 @@ export function GoogleSheetsStudio({
           {/* =================================================================== */}
           {activeStep === 1 && (
             <div className="p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#161618] space-y-6 shadow-xs animate-in fade-in duration-200">
-              {/* PRO UI AUTOCOMPLETE FIELD WITH CREATE OPTION */}
+              {/* AUTOCOMPLETE FIELD WITH CREATE OPTION */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-neutral-900 dark:text-white">
-                    {isVi ? 'Chọn hoặc tạo bảng tính Google Sheets' : 'Select or Create Google Spreadsheet'}
+                    Select or Create Google Spreadsheet
                   </label>
                   {spreadsheetId ? (
                     <a
                       href={`https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`}
                       target="_blank"
                       rel="noreferrer"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
+                        if (window.bridge?.openExternal) {
+                          window.bridge.openExternal(url);
+                        } else {
+                          window.open(url, '_blank', 'noreferrer');
+                        }
+                      }}
                       className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1.5 cursor-pointer transition"
                     >
                       <FileSpreadsheet className="w-3.5 h-3.5" />
-                      <span>{isVi ? 'Mở trên Sheets' : 'Open in Sheets'}</span>
+                      <span>Open in Sheets</span>
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   ) : null}
@@ -455,12 +447,9 @@ export function GoogleSheetsStudio({
                       <FileSpreadsheet className="w-4 h-4 text-emerald-500 shrink-0" />
                       <span className="truncate text-sm font-bold">{selectedFileName || 'ChatBridge_Transcripts_2026'}</span>
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                        {isVi ? 'Đang liên kết' : 'Connected'}
+                        Connected
                       </span>
                     </div>
-                    <span className="text-[11px] font-mono text-neutral-400 shrink-0">
-                      ID: {spreadsheetId ? `${spreadsheetId.slice(0, 18)}...` : 'Linked'}
-                    </span>
                   </div>
                 ) : (
                   <Autocomplete
@@ -496,7 +485,7 @@ export function GoogleSheetsStudio({
                             <SearchField.Input
                               value={sheetSearchQuery}
                               onChange={(e) => setSheetSearchQuery(e.target.value)}
-                              placeholder={isVi ? 'Tìm kiếm hoặc nhập tên mới...' : 'Search Google Drive sheets or type new name...'}
+                              placeholder="Search Google Drive sheets or type new name..."
                               className="w-full text-xs bg-transparent outline-none text-neutral-900 dark:text-white font-medium"
                             />
                             <SearchField.ClearButton />
@@ -507,7 +496,7 @@ export function GoogleSheetsStudio({
                           {/* Option: Create New Spreadsheet */}
                           <ListBox.Item
                             id="__create_new__"
-                            textValue={sheetSearchQuery.trim() || 'Tạo bảng tính mới'}
+                            textValue={sheetSearchQuery.trim() || 'Create new spreadsheet'}
                             className="p-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 cursor-pointer flex items-center gap-2.5 transition select-none"
                           >
                             <div className="w-6 h-6 rounded-lg bg-emerald-500 text-white flex items-center justify-center shrink-0">
@@ -516,11 +505,11 @@ export function GoogleSheetsStudio({
                             <div className="min-w-0">
                               <div className="text-xs font-bold truncate">
                                 {sheetSearchQuery.trim()
-                                  ? (isVi ? `+ Tạo bảng tính mới: "${sheetSearchQuery.trim()}"` : `+ Create new spreadsheet: "${sheetSearchQuery.trim()}"`)
-                                  : (isVi ? '+ Tạo bảng tính mới trên Google Drive' : '+ Create new spreadsheet on Drive')}
+                                  ? `+ Create new spreadsheet: "${sheetSearchQuery.trim()}"`
+                                  : '+ Create new spreadsheet on Google Drive'}
                               </div>
                               <div className="text-[10px] text-emerald-600 dark:text-emerald-400">
-                                {isVi ? 'Tự động tạo file và gán quyền ghi' : 'Auto-provisions file and syncs data'}
+                                Auto-provisions file and syncs data
                               </div>
                             </div>
                           </ListBox.Item>
@@ -561,7 +550,7 @@ export function GoogleSheetsStudio({
                     onPress={onClose}
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>{isVi ? 'Quay lại Cài đặt' : 'Back to Settings'}</span>
+                    <span>Back to Settings</span>
                   </Button>
                 ) : <div />}
 
@@ -570,7 +559,7 @@ export function GoogleSheetsStudio({
                   className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-neutral-900 dark:bg-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 cursor-pointer flex items-center gap-1.5 shadow-xs"
                   onPress={() => setActiveStep(2)}
                 >
-                  <span>{isVi ? 'Tiếp tục: Chiến lược chia Tab' : 'Next: Tabs Strategy'}</span>
+                  <span>Next: Tabs Strategy</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
               </div>
@@ -578,25 +567,23 @@ export function GoogleSheetsStudio({
           )}
 
           {/* =================================================================== */}
-          {/* STEP 2: TABS STRATEGY WITH AUTHENTIC CHAT_BRIDGE MINI THUMBNAILS     */}
+          {/* STEP 2: TABS STRATEGY                                               */}
           {/* =================================================================== */}
           {activeStep === 2 && (
             <div className="space-y-5 animate-in fade-in duration-200">
               <div className="p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#161618] text-xs text-neutral-600 dark:text-neutral-300 shadow-xs">
-                {isVi
-                  ? 'Chọn cách chia tin nhắn vào các trang tính. Hệ thống sẽ tự động tạo tab mới theo quy tắc khi có tin nhắn mới phát sinh.'
-                  : 'Choose how messages are distributed across spreadsheet tabs. New sheets will be automatically provisioned when messages match criteria.'}
+                Choose how messages are distributed across spreadsheet tabs. New sheets will be automatically provisioned when messages match criteria.
               </div>
 
-              {/* 6 Strategy Cards with authentic LayoutThumb illustrations */}
+              {/* Strategy Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                 {[
-                  { id: 'single' as SheetLayoutPreset, labelEn: 'Single Tab (Default)', labelVi: 'Một trang tính (Mặc định)', example: 'Messages / Tin nhắn', desc: 'Toàn bộ tin nhắn được gom vào 1 bảng duy nhất' },
-                  { id: 'daily' as SheetLayoutPreset, labelEn: 'Daily Tab', labelVi: 'Mỗi ngày một tab', example: '2026-11-14 (UTC+7)', desc: 'Tự động tạo tab riêng biệt theo từng ngày' },
-                  { id: 'monthly' as SheetLayoutPreset, labelEn: 'Monthly Tab', labelVi: 'Mỗi tháng một tab', example: '2026-11 (UTC+7)', desc: 'Gom theo kỳ thanh toán và chu kỳ kế toán' },
-                  { id: 'network' as SheetLayoutPreset, labelEn: 'By App Network', labelVi: 'Theo ứng dụng', example: 'Zalo, WhatsApp', desc: 'Tách riêng khách hàng nội địa và quốc tế' },
-                  { id: 'contact' as SheetLayoutPreset, labelEn: 'By Contact Customer', labelVi: 'Theo khách hàng', example: 'Lan, Marcus, Tuấn', desc: 'Mỗi khách hàng có một sổ cái riêng biệt' },
-                  { id: 'custom' as SheetLayoutPreset, labelEn: 'Custom Pattern', labelVi: 'Công thức tùy chỉnh', example: '{App} - {Month}', desc: 'Định dạng linh hoạt theo biến số' },
+                  { id: 'single' as SheetLayoutPreset, label: 'Single Tab (Default)', example: 'Messages', desc: 'All transcripts are collected into a single unified worksheet' },
+                  { id: 'daily' as SheetLayoutPreset, label: 'Daily Tab', example: '2026-11-14 (UTC+7)', desc: 'Automatically creates a dedicated tab for each day' },
+                  { id: 'monthly' as SheetLayoutPreset, label: 'Monthly Tab', example: '2026-11 (UTC+7)', desc: 'Organizes transcripts by billing period and monthly review cycle' },
+                  { id: 'network' as SheetLayoutPreset, label: 'By App Network', example: 'Zalo, WhatsApp', desc: 'Separates channels into distinct app worksheets' },
+                  { id: 'contact' as SheetLayoutPreset, label: 'By Contact Customer', example: 'Lan, Marcus, David', desc: 'Maintains an individual ledger tab per customer contact' },
+                  { id: 'custom' as SheetLayoutPreset, label: 'Custom Pattern', example: '{App} - {Month}', desc: 'Flexible dynamic naming pattern with runtime tokens' },
                 ].map((card) => {
                   const isSelected = preset === card.id;
                   return (
@@ -615,12 +602,11 @@ export function GoogleSheetsStudio({
                           : 'bg-white dark:bg-[#161618] border-neutral-200/90 dark:border-neutral-800 hover:border-neutral-400 shadow-xs'
                       }`}
                     >
-                      {/* Authentic chat_bridge Visual Thumbnail */}
                       <LayoutThumb preset={card.id} />
 
                       <div className="space-y-1">
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-xs">{isVi ? card.labelVi : card.labelEn}</span>
+                          <span className="font-bold text-xs">{card.label}</span>
                           <span className={`text-[10px] font-mono ${isSelected ? 'text-neutral-300 dark:text-neutral-600' : 'text-neutral-400'}`}>
                             {card.example}
                           </span>
@@ -634,7 +620,7 @@ export function GoogleSheetsStudio({
                 })}
               </div>
 
-              {/* Authentic chat_bridge Sample Tabs Bar */}
+              {/* Sample Tabs Bar */}
               <div className="p-3.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-100/70 dark:bg-[#161618] flex items-center gap-2 overflow-x-auto text-[11px]">
                 <div className="flex items-center gap-1 text-neutral-400 shrink-0">
                   <Plus className="w-3.5 h-3.5" />
@@ -678,10 +664,10 @@ export function GoogleSheetsStudio({
                   </div>
                   <div>
                     <span className="font-bold text-xs text-neutral-900 dark:text-white">
-                      {isVi ? 'Thêm trang tính Danh bạ tổng hợp (Contacts Summary Sheet)' : 'Add Contacts Directory Summary Sheet'}
+                      Add Contacts Directory Summary Sheet
                     </span>
                     <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                      Tự động tạo thêm một tab chứa danh sách người liên hệ, số điện thoại, ứng dụng và số lượng tin nhắn.
+                      Automatically generates an auxiliary sheet containing contact names, phone numbers, app networks, and message volume totals.
                     </p>
                   </div>
                 </div>
@@ -698,7 +684,7 @@ export function GoogleSheetsStudio({
                   onPress={() => setActiveStep(1)}
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>{isVi ? 'Quay lại' : 'Back'}</span>
+                  <span>Back</span>
                 </Button>
 
                 <Button
@@ -706,7 +692,7 @@ export function GoogleSheetsStudio({
                   className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-neutral-900 dark:bg-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 cursor-pointer flex items-center gap-1.5 shadow-xs"
                   onPress={() => setActiveStep(3)}
                 >
-                  <span>{isVi ? 'Tiếp tục: Kéo thả Cột (Table)' : 'Next: Drag & Drop Columns'}</span>
+                  <span>Next: Drag & Drop Columns</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
               </div>
@@ -718,29 +704,29 @@ export function GoogleSheetsStudio({
           {/* =================================================================== */}
           {activeStep === 3 && (
             <div className="space-y-5 animate-in fade-in duration-200">
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-start">
-                {/* Field Palette (Cột có thể thêm) */}
+              <div className="flex flex-col lg:flex-row gap-5 items-start">
+                {/* Field Palette */}
                 <div
-                  className={`p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#161618] space-y-3 lg:col-span-1 shadow-xs ${
+                  className={`w-full lg:w-64 shrink-0 p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#161618] space-y-3 shadow-xs ${
                     isReadOnly ? 'opacity-50 pointer-events-none' : ''
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-bold text-neutral-900 dark:text-white uppercase tracking-wider">
-                      {isVi ? 'Trường dữ liệu' : 'Field Palette'}
+                      Field Palette
                     </h4>
                     <span className="text-[10px] font-mono text-neutral-400">
-                      {unusedColumns.length} còn lại
+                      {unusedColumns.length} available
                     </span>
                   </div>
                   <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
-                    {isVi ? 'Bấm + hoặc kéo thả trực tiếp vào thanh tiêu đề bảng tính' : 'Click + or drag directly into table header to add'}
+                    Click + or drag directly into table header to add
                   </p>
 
                   <div className="space-y-1.5">
                     {unusedColumns.length === 0 ? (
                       <div className="p-3 text-center rounded-xl bg-neutral-100 dark:bg-neutral-800 text-[11px] text-neutral-400">
-                        {isVi ? 'Đã thêm tất cả các cột' : 'All available columns added'}
+                        All available columns added
                       </div>
                     ) : (
                       unusedColumns.map((col) => (
@@ -750,11 +736,11 @@ export function GoogleSheetsStudio({
                           onDragStart={(e) => !isReadOnly && handleDragStart(e, col.id)}
                           onClick={() => !isReadOnly && addColumnToEnd(col.id)}
                           className="w-full p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-emerald-500 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 text-left transition text-xs font-medium flex items-center justify-between group cursor-grab active:cursor-grabbing select-none"
-                          title={isVi ? 'Bấm hoặc kéo vào bảng để thêm cột' : 'Click or drag into table to add column'}
+                          title="Click or drag into table to add column"
                         >
                           <div className="flex items-center gap-2 truncate">
                             <GripVertical className="w-3.5 h-3.5 text-neutral-400 group-hover:text-emerald-500 shrink-0" />
-                            <span className="truncate">{isVi ? col.labelVi : col.labelEn}</span>
+                            <span className="truncate">{col.label}</span>
                           </div>
                           <Plus className="w-3.5 h-3.5 text-neutral-400 group-hover:text-emerald-500 shrink-0" />
                         </div>
@@ -763,11 +749,11 @@ export function GoogleSheetsStudio({
                   </div>
                 </div>
 
-                {/* Table Viewport (Full Google Sheets Live Table with Interactive Drag & Drop Header) */}
-                <div className="lg:col-span-3 space-y-3.5">
-                  <div className="rounded-2xl border border-neutral-300 dark:border-neutral-700/80 bg-white dark:bg-[#0c0d0e] overflow-hidden shadow-xs flex flex-col">
+                {/* Table Viewport */}
+                <div className="flex-1 min-w-0 w-full space-y-3.5">
+                  <div className="rounded-2xl border border-neutral-300 dark:border-neutral-700/80 bg-white dark:bg-[#0c0d0e] overflow-hidden shadow-xs flex flex-col w-full">
                     {/* Table Viewport */}
-                    <div className="max-h-96 overflow-auto scrollbar-thin">
+                    <div className="min-h-[380px] max-h-[540px] overflow-auto scrollbar-thin">
                       <table className="w-full text-xs border-collapse font-sans">
                         <thead>
                           {/* Letters Row (A, B, C...) */}
@@ -805,14 +791,14 @@ export function GoogleSheetsStudio({
                                       ? 'bg-emerald-500/25 text-emerald-800 dark:text-emerald-200 ring-2 ring-emerald-500/40 ring-inset'
                                       : ''
                                   }`}
-                                  title={isReadOnly ? '' : (isVi ? 'Kéo để đổi thứ tự, bấm × để xóa' : 'Drag to reorder, click × to remove')}
+                                  title={isReadOnly ? '' : 'Drag to reorder, click remove'}
                                 >
                                   <div className="flex items-center justify-between gap-2 min-w-[130px]">
                                     <div className="flex items-center gap-1.5 truncate">
                                       {!isReadOnly && (
                                         <GripVertical className="w-3.5 h-3.5 text-neutral-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 shrink-0" />
                                       )}
-                                      <span className="truncate">{isVi ? colDef?.labelVi : colDef?.labelEn || col}</span>
+                                      <span className="truncate">{colDef?.label || col}</span>
                                     </div>
                                     {!isReadOnly && (
                                       <button
@@ -822,7 +808,7 @@ export function GoogleSheetsStudio({
                                           removeColumn(col);
                                         }}
                                         className="w-4 h-4 rounded-md hover:bg-rose-500/20 text-neutral-400 hover:text-rose-500 flex items-center justify-center transition cursor-pointer shrink-0"
-                                        title={isVi ? 'Xóa cột này khỏi bảng' : 'Remove column from table'}
+                                        title="Remove column from table"
                                       >
                                         <X className="w-3 h-3" />
                                       </button>
@@ -834,7 +820,7 @@ export function GoogleSheetsStudio({
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-200/60 dark:divide-neutral-800/60 text-neutral-700 dark:text-neutral-300 text-[11px]">
-                          {sampleMessages.slice(0, 5).map((msg, rIdx) => (
+                          {sampleMessages.map((msg, rIdx) => (
                             <tr key={msg.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/40">
                               <td className="p-1.5 text-center font-mono text-[10px] text-neutral-400 border-r border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30">
                                 {rIdx + 2}
@@ -851,7 +837,7 @@ export function GoogleSheetsStudio({
                                 else if (col === 'id') val = msg.id;
 
                                 return (
-                                  <td key={col} className="p-2 border-r border-neutral-200 dark:border-neutral-800 text-left truncate max-w-[220px]">
+                                  <td key={col} className="p-2 border-r border-neutral-200 dark:border-neutral-800 text-left truncate max-w-[320px]">
                                     {val}
                                   </td>
                                 );
@@ -900,7 +886,7 @@ export function GoogleSheetsStudio({
                   onPress={() => setActiveStep(2)}
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>{isVi ? 'Quay lại' : 'Back'}</span>
+                  <span>Back</span>
                 </Button>
 
                 {isReadOnly ? (
@@ -909,7 +895,7 @@ export function GoogleSheetsStudio({
                     className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-neutral-900 dark:bg-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 cursor-pointer shadow-xs flex items-center gap-1.5"
                     onPress={onClose}
                   >
-                    <span>{isVi ? 'Đóng cấu hình' : 'Close Config'}</span>
+                    <span>Close Config</span>
                   </Button>
                 ) : (
                   <Button
@@ -918,7 +904,7 @@ export function GoogleSheetsStudio({
                     onPress={handleSaveLayout}
                   >
                     <Check className="w-3.5 h-3.5" />
-                    <span>{saveSuccess ? (isVi ? 'Đã lưu bố cục!' : 'Layout Saved!') : (isVi ? 'Hoàn tất & Lưu bố cục' : 'Finish & Save Layout')}</span>
+                    <span>{saveSuccess ? 'Layout Saved!' : 'Finish & Save Layout'}</span>
                   </Button>
                 )}
               </div>

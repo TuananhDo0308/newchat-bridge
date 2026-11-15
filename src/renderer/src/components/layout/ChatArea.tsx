@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { ScrollShadow } from '@heroui/react';
 import { useChatBridgeStore } from '../../store/useChatBridgeStore.js';
 import { formatMessageDayDivider, getMessageDateKey } from '../../utils/formatters.js';
@@ -14,7 +14,10 @@ export function ChatArea() {
   const chats = useChatBridgeStore((s) => s.chats);
   const messages = useChatBridgeStore((s) => s.messages);
   const selectedChatId = useChatBridgeStore((s) => s.selectedChatId);
+  const isMobileChatOpen = useChatBridgeStore((s) => s.isMobileChatOpen);
   const toggleChatSync = useChatBridgeStore((s) => s.toggleChatSync);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Active chat
   const activeChat = useMemo(() => {
@@ -34,6 +37,23 @@ export function ChatArea() {
     );
   }, [messages, activeChat]);
 
+  // Automatically scroll to bottom so the latest/bottom-most messages are visible first
+  useEffect(() => {
+    const scrollToBottom = () => {
+      const el = messagesEndRef.current;
+      if (el) {
+        el.scrollIntoView({ behavior: 'instant' });
+        if (el.parentElement) {
+          el.parentElement.scrollTop = el.parentElement.scrollHeight;
+        }
+      }
+    };
+
+    scrollToBottom();
+    const timer = setTimeout(scrollToBottom, 60);
+    return () => clearTimeout(timer);
+  }, [selectedChatId, activeMessages.length]);
+
   // 30-day sync window cutoff (Simulated current date: Nov 14, 2026 -> 30 days ago is Oct 15, 2026)
   const isWithin30Days = (timeStr: string) => {
     const msgTime = new Date(timeStr).getTime();
@@ -50,7 +70,9 @@ export function ChatArea() {
   }
 
   return (
-    <main className="flex-1 min-w-0 bg-white dark:bg-black flex flex-col overflow-hidden transition-colors duration-200">
+    <main className={`flex-1 min-w-0 bg-white dark:bg-black flex-col overflow-hidden transition-colors duration-200 ${
+      isMobileChatOpen ? 'flex w-full' : 'hidden md:flex'
+    }`}>
       {/* Top Active Chat Header with Unsync Confirmation */}
       <ChatHeader
         chat={activeChat}
@@ -148,6 +170,9 @@ export function ChatArea() {
             No messages in this conversation yet.
           </div>
         )}
+
+        {/* Anchor to scroll to bottom */}
+        <div ref={messagesEndRef} className="h-0 w-full shrink-0" />
       </ScrollShadow>
     </main>
   );

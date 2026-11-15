@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import zaloLogo from '../../assets/zalo-logo.png';
 import whatsappLogo from '../../assets/whatsapp-logo.png';
 import { IconCheck, IconCheckCheck, IconUsers } from './WizardIcons.js';
@@ -93,7 +93,7 @@ export function Step3SelectConversations({
                   <div className="w-9 h-9 rounded-full overflow-hidden bg-neutral-200 dark:bg-neutral-800 ring-1 ring-black/5 dark:ring-white/10">
                     <img src={chat.avatar} alt={chat.name} className="w-full h-full object-cover" />
                   </div>
-                  {chat.isGroup && (
+                  {(chat.kind === 'group' || (chat as any).isGroup) && (
                     <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-neutral-900 text-white flex items-center justify-center border border-white dark:border-neutral-900 text-[8px]">
                       <IconUsers className="w-2.5 h-2.5" />
                     </span>
@@ -107,7 +107,7 @@ export function Step3SelectConversations({
                     </h4>
                   </div>
                   <p className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate mt-0.5">
-                    {chat.lastMessageSnippet || 'No messages yet'}
+                    {chat.latest?.text || (chat as any).lastMessageSnippet || 'No messages yet'}
                   </p>
                 </div>
               </div>
@@ -115,7 +115,7 @@ export function Step3SelectConversations({
               {/* Status & Time */}
               <div className="text-right shrink-0 flex flex-col items-end gap-1">
                 <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono">
-                  {formatChatTime(chat.lastActivity)}
+                  {formatChatTime(chat.latest?.time || (chat as any).lastActivity || new Date().toISOString())}
                 </span>
                 {isSelected ? (
                   <span
@@ -164,6 +164,24 @@ export function Step3ConversationPreview({
   const isZalo = activePreviewChat.network === 'zalo';
   const rawPreviewChatMessages = messages.filter((m) => m.thread === activePreviewChat.thread);
   const displayedMessages = getEnrichedChatMessages(activePreviewChat, rawPreviewChatMessages, myName);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const scrollToBottom = () => {
+      const el = messagesEndRef.current;
+      if (el) {
+        el.scrollIntoView({ behavior: 'instant' });
+        if (el.parentElement) {
+          el.parentElement.scrollTop = el.parentElement.scrollHeight;
+        }
+      }
+    };
+
+    scrollToBottom();
+    const timer = setTimeout(scrollToBottom, 60);
+    return () => clearTimeout(timer);
+  }, [activePreviewChat.id, displayedMessages.length]);
 
   return (
     <div className="relative z-10 flex flex-col h-full justify-between gap-3 animate-in fade-in duration-300">
@@ -249,6 +267,9 @@ export function Step3ConversationPreview({
             </React.Fragment>
           );
         })}
+
+        {/* Anchor to scroll to bottom */}
+        <div ref={messagesEndRef} className="h-0 w-full shrink-0" />
       </div>
 
       {/* Bottom glassy status line */}
