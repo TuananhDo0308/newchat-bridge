@@ -172,15 +172,19 @@ export function AddAccountModal({
   const activeProfile = selectedChannel === 'zalo' ? zaloProfile : whatsAppProfile;
   const hasConnectedCurrent = Boolean(activeProfile);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [step]);
+
   return (
     <div
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-5 select-none bg-black/60 backdrop-blur-md overflow-hidden animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 select-none bg-black/60 backdrop-blur-md overflow-hidden animate-in fade-in duration-200"
     >
       {/* 2-Column Responsive Split Modal Card */}
-      <div className="relative z-10 w-full max-w-5xl lg:max-w-6xl h-full sm:h-[680px] max-h-full sm:max-h-[94vh] bg-white/95 dark:bg-[#111113]/95 backdrop-blur-2xl border-0 sm:border border-neutral-200/90 dark:border-neutral-800 rounded-none sm:rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2 transition-all">
+      <div className="relative z-10 w-full max-w-5xl lg:max-w-6xl h-[680px] max-h-[94vh] bg-white/95 dark:bg-[#111113]/95 backdrop-blur-2xl border border-neutral-200/90 dark:border-neutral-800 rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2 transition-all">
         {/* =================================================================== */}
         {/* LEFT COLUMN: 3 STEPS & NAVIGATION                                   */}
         {/* =================================================================== */}

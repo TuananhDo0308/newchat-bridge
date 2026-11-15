@@ -41,11 +41,8 @@ export function ChatArea() {
   useEffect(() => {
     const scrollToBottom = () => {
       const el = messagesEndRef.current;
-      if (el) {
-        el.scrollIntoView({ behavior: 'instant' });
-        if (el.parentElement) {
-          el.parentElement.scrollTop = el.parentElement.scrollHeight;
-        }
+      if (el && el.parentElement) {
+        el.parentElement.scrollTop = el.parentElement.scrollHeight;
       }
     };
 

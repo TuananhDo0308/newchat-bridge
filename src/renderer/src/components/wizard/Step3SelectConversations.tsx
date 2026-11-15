@@ -165,16 +165,13 @@ export function Step3ConversationPreview({
   const rawPreviewChatMessages = messages.filter((m) => m.thread === activePreviewChat.thread);
   const displayedMessages = getEnrichedChatMessages(activePreviewChat, rawPreviewChatMessages, myName);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const scrollToBottom = () => {
-      const el = messagesEndRef.current;
-      if (el) {
-        el.scrollIntoView({ behavior: 'instant' });
-        if (el.parentElement) {
-          el.parentElement.scrollTop = el.parentElement.scrollHeight;
-        }
+      const container = scrollContainerRef.current;
+      if (container) {
+        container.scrollTop = container.scrollHeight;
       }
     };
 
@@ -201,7 +198,10 @@ export function Step3ConversationPreview({
       </div>
 
       {/* Real Full-Height Chat Feed Grouped Across Days */}
-      <div className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0 py-2 scrollbar-thin scrollbar-thumb-white/10">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0 py-2 scrollbar-thin scrollbar-thumb-white/10"
+      >
         {displayedMessages.map((msg, index) => {
           const isMe = msg.direction === 'outbound';
           const currentDateKey = getMessageDateKey(msg.time);
@@ -267,9 +267,6 @@ export function Step3ConversationPreview({
             </React.Fragment>
           );
         })}
-
-        {/* Anchor to scroll to bottom */}
-        <div ref={messagesEndRef} className="h-0 w-full shrink-0" />
       </div>
 
       {/* Bottom glassy status line */}

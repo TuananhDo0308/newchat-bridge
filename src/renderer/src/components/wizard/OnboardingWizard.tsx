@@ -236,8 +236,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     }
   };
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [step]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-5 select-none bg-[#07080a] overflow-hidden animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 select-none bg-[#07080a] overflow-hidden animate-in fade-in duration-300">
       {/* Dedicated First-Run Ambient Lighting Backdrops */}
       <div className="absolute top-[-10%] left-[-10%] w-[520px] h-[520px] rounded-full bg-orange-600/12 blur-[130px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[640px] h-[640px] rounded-full bg-emerald-600/12 blur-[140px] pointer-events-none" />
@@ -245,7 +249,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       <div className="absolute inset-0 bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
 
       {/* 2-Column Responsive Split Modal Card */}
-      <div className="relative z-10 w-full max-w-5xl lg:max-w-6xl h-full sm:h-[680px] max-h-full sm:max-h-[94vh] bg-white dark:bg-[#111113] border-0 sm:border border-neutral-200/90 dark:border-neutral-800 rounded-none sm:rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2 transition-all">
+      <div className="relative z-10 w-full max-w-5xl lg:max-w-6xl h-[680px] max-h-[94vh] bg-white dark:bg-[#111113] border border-neutral-200/90 dark:border-neutral-800 rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2 transition-all">
         {/* =================================================================== */}
         {/* LEFT COLUMN: STEPS & CONTROLS                                       */}
         {/* =================================================================== */}
